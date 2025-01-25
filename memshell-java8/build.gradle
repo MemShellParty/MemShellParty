@@ -1,29 +1,22 @@
-plugins {
-    id 'war'
-}
-
 group = 'com.reajason.javaweb'
 version = ''
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
-}
-
-repositories {
-    mavenCentral()
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 dependencies {
     implementation project(":memshell")
-    implementation 'org.springframework:spring-webmvc:4.3.30.RELEASE'
-    implementation 'org.springframework:spring-webflux:5.3.24'
-    implementation 'org.springframework:spring-web:4.3.30.RELEASE'
-    implementation 'io.projectreactor.netty:reactor-netty-core:1.1.25'
-    implementation 'io.netty:netty-all:4.1.116.Final'
-    implementation 'net.bytebuddy:byte-buddy:1.+'
-    providedCompile 'javax.servlet:javax.servlet-api:3.0.1'
-    providedCompile 'javax.websocket:javax.websocket-api:1.1'
-    testImplementation platform('org.junit:junit-bom:5.10.0')
+    implementation 'net.bytebuddy:byte-buddy'
+
+    implementation 'org.springframework:spring-webmvc'
+    implementation 'org.springframework:spring-webflux'
+    implementation 'io.projectreactor.netty:reactor-netty-core'
+
+    implementation 'javax.servlet:javax.servlet-api'
+    implementation 'javax.websocket:javax.websocket-api'
+    testImplementation platform('org.junit:junit-bom')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 
