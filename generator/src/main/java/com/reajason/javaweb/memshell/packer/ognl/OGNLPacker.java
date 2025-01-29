@@ -2,7 +2,7 @@ package com.reajason.javaweb.memshell.packer.ognl;
 
 import com.reajason.javaweb.memshell.config.GenerateResult;
 import com.reajason.javaweb.memshell.packer.Packer;
-import com.reajason.javaweb.memshell.packer.scriptengine.ScriptEnginePacker;
+import com.reajason.javaweb.memshell.packer.Packers;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -14,12 +14,11 @@ import java.util.Objects;
  * @since 2024/12/14
  */
 public class OGNLPacker implements Packer {
-    ScriptEnginePacker scriptEnginePacker = new ScriptEnginePacker();
     String template = "";
 
     public OGNLPacker() {
         try {
-            template = IOUtils.toString(Objects.requireNonNull(this.getClass().getResourceAsStream("/OgnlScriptEngine.txt")), Charset.defaultCharset());
+            template = IOUtils.toString(Objects.requireNonNull(this.getClass().getResourceAsStream("/OGNLScriptEngine.txt")), Charset.defaultCharset());
         } catch (IOException ignored) {
 
         }
@@ -27,7 +26,7 @@ public class OGNLPacker implements Packer {
 
     @Override
     public String pack(GenerateResult generateResult) {
-        String script = scriptEnginePacker.pack(generateResult);
+        String script = Packers.ScriptEngine.getInstance().pack(generateResult);
         return template.replace("{{script}}", script);
     }
 }
