@@ -1,6 +1,5 @@
 import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.AviatorEvaluatorInstance;
-import groovy.lang.GroovyShell;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
