@@ -62,11 +62,9 @@ public class UndertowServletInitialHandlerAgentWithAsmInjector implements ClassF
             public MethodVisitor visitMethod(int access, String name, String descriptor,
                                              String signature, String[] exceptions) {
                 MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
-                System.out.println(name);
                 if (TARGET_METHOD_NAME.equals(name)) {
                     try {
                         Type[] argumentTypes = Type.getArgumentTypes(descriptor);
-                        System.out.println(argumentTypes.length);
                         return (MethodVisitor) constructor.newInstance(mv, argumentTypes);
                     } catch (Exception e) {
                         e.printStackTrace();
