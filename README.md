@@ -1,12 +1,24 @@
-# MemShellParty
+<h1 align="center">MemShellParty</h1>
+
+<p align="center">中文 | <a href="./docs/README.en.md">English</a><br></p>
+<div align="center">
 
 [![ci-test](https://img.shields.io/github/actions/workflow/status/reajason/memshellparty/test.yaml?label=Test%20CI&branch=master&style=flat-square)](https://github.com/ReaJason/MemShellParty/actions/workflows/test.yaml)
 [![ci-release](https://img.shields.io/github/actions/workflow/status/reajason/memshellparty/release.yaml?label=Release%20CD&style=flat-square)](https://github.com/ReaJason/MemShellParty/actions/workflows/release.yaml)
+</div>
+
+
+<div align="center">
+
 [![release](https://img.shields.io/github/v/release/reajason/memshellparty?label=Release&style=flat-square)](https://github.com/ReaJason/MemShellParty/releases)
 [![MavenCentral](https://img.shields.io/maven-central/v/io.github.reajason/generator?label=MavenCentral&style=flat-square)](https://central.sonatype.com/artifact/io.github.reajason/generator)
 [![docker-pulls](https://img.shields.io/docker/pulls/reajason/memshell-party?label=DockerHub%20Pulls&style=flat-square)](https://hub.docker.com/r/reajason/memshell-party)
+</div>
+<div align="center">
+
 [![Telegram](https://img.shields.io/badge/Chat-Telegram-%2326A5E4?style=flat-square&logo=telegram&logoColor=%2326A5E4)](https://t.me/memshell)
 [![OnlinePartyWebSite](https://img.shields.io/badge/WebSite-OnlineParty-%23646CFF?style=flat-square&logo=vite&logoColor=%23646CFF)](https://party.memshell.news)
+</div>
 
 > [!WARNING]
 > 本工具仅供安全研究人员、网络管理员及相关技术人员进行授权的安全测试、漏洞评估和安全审计工作使用。使用本工具进行任何未经授权的网络攻击或渗透测试等行为均属违法，使用者需自行承担相应的法律责任。
@@ -43,7 +55,7 @@ MemShellParty 是一款可本地部署的一键生成常见中间件框架内存
 
 > 仅限尝鲜的小伙伴，对于其他暴露在公网的服务请谨慎使用，小心生成的内存马带后门
 
-可直接访问 [https://party.memshell.news](https://party.memshell.news)，每次 Release 都会自动部署最新的镜像。
+可直接访问 [https://party.memshell.news](https://party.memshell.news)。每次 Release 都会自动部署最新的镜像。
 
 ### 本地部署（推荐）
 
@@ -211,12 +223,12 @@ Files.write(Paths.get("agent.jar"), agentJarBytes);
 
 ### 内存马功能
 
-- [x] Godzilla 哥斯拉
-- [x] Behinder 冰蝎
+- [x] [Godzilla 哥斯拉](https://github.com/BeichenDream/Godzilla)
+- [x] [Behinder 冰蝎](https://github.com/rebeyond/Behinder)
 - [x] 命令执行
-- [x] Suo5
-- [x] AntSword 蚁剑
-- [x] Neo-reGeorg
+- [x] [Suo5](https://github.com/zema1/suo5)
+- [x] [AntSword 蚁剑](https://github.com/AntSwordProject/antSword)
+- [x] [Neo-reGeorg](https://github.com/L-codes/Neo-reGeorg)
 - [x] Custom
 
 ### 封装方式
@@ -230,7 +242,7 @@ Files.write(Paths.get("agent.jar"), agentJarBytes);
 - [x] 内置脚本引擎、Rhino 脚本引擎
 - [x] EL、SpEL、OGNL、Aviator、MVEL、JEXL、Groovy、JXPath、BeanShell
 - [x] Velocity、Freemarker、JinJava
-- [x] 原生反序列化（CB4）
+- [x] 原生反序列化（CB 和 CC 链）
 - [x] Agent
 - [x] XXL-JOB Executor
 - [x] Hessian、Hessian2 反序列化（XSLT链）
