@@ -3,10 +3,10 @@ package com.reajason.javaweb.packer.spel;
 import com.reajason.javaweb.packer.ClassPackerConfig;
 import com.reajason.javaweb.packer.Packer;
 import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Base64;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.zip.GZIPOutputStream;
 
 
@@ -21,7 +21,7 @@ public class SpELSpringIOUtilsGzipPacker implements Packer {
     @SneakyThrows
     public String pack(ClassPackerConfig config) {
         return template.replace("{{className}}", config.getClassName())
-                .replace("{{base64Str}}", Base64.getEncoder().encodeToString(gzipCompress(config.getClassBytes())));
+                .replace("{{base64Str}}", Base64.encodeBase64String(gzipCompress(config.getClassBytes())));
     }
 
     public static byte[] gzipCompress(byte[] data) throws IOException {
