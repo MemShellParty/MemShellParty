@@ -2,31 +2,22 @@ package com.reajason.javaweb.packer.scriptengine;
 
 import com.reajason.javaweb.packer.ClassPackerConfig;
 import com.reajason.javaweb.packer.Packer;
+import com.reajason.javaweb.packer.Util;
 import lombok.SneakyThrows;
-import org.apache.commons.io.IOUtils;
-
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.Objects;
 
 public class DefaultScriptEnginePacker implements Packer {
-    String jsTemplate = null;
-
-    public DefaultScriptEnginePacker() {
-        try {
-            jsTemplate = IOUtils.toString(Objects.requireNonNull(this.getClass().getResourceAsStream("/DefaultScriptEngine.js")), Charset.defaultCharset());
-        } catch (IOException ignored) {
-
-        }
-    }
+    private final String jsTemplate = Util.loadTemplateFromResource("/memshell-party/ScriptEngine.js");
 
     @Override
     @SneakyThrows
     public String pack(ClassPackerConfig config) {
-        return jsTemplate
+        return scriptToSingleLine(jsTemplate
                 .replace("{{className}}", config.getClassName())
-                .replace("{{base64Str}}", config.getClassBytesBase64Str())
-                .replace("\n", "")
+                .replace("{{base64Str}}", config.getClassBytesBase64Str()));
+    }
+
+    public static String scriptToSingleLine(String script) {
+        return script.replace("\n", "")
                 .replaceAll("(?m)^[ \t]+|[ \t]+$", "")
                 .replaceAll("[ \t]{2,}", " ");
     }
