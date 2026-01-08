@@ -39,7 +39,7 @@ public class TomcatFilterProbe {
 
         try {
             Object[] filterMaps = (Object[]) invokeMethod(context, "findFilterMaps");
-            if (filterMaps == null || filterMaps.length == 0) return new ArrayList<>();
+            if (filterMaps == null || filterMaps.length == 0) return Collections.emptyList();
 
             Object[] filterDefs = (Object[]) invokeMethod(context, "findFilterDefs");
             Map<?, ?> filterConfigs = (Map<?, ?>) getFieldValue(context, "filterConfigs");
