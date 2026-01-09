@@ -41,8 +41,6 @@ public class GlassFishFilterProbe {
             if (filterMaps == null || filterMaps.isEmpty()) return Collections.emptyList();
 
             Object[] filterDefs = (Object[]) invokeMethod(context, "findFilterDefs");
-            Map<?, ?> filterConfigs = (Map<?, ?>) getFieldValue(context, "filterConfigs");
-
             for (Object fm : filterMaps) {
                 String name = (String) invokeMethod(fm, "getFilterName");
                 if (name == null) continue;
@@ -52,8 +50,8 @@ public class GlassFishFilterProbe {
                         for (Object def : filterDefs) {
                             if (!name.equals(invokeMethod(def, "getFilterName"))) continue;
                             Class<?> cls = (Class<?>) invokeMethod(def, "getFilterClass");
-                            if (cls == null && filterConfigs != null) {
-                                Object config = filterConfigs.get(name);
+                            if (cls == null) {
+                                Object config = invokeMethod(context, "findFilterConfig", new Class[]{String.class}, new Object[]{name});
                                 Object filter = config != null ? invokeMethod(config, "getFilter") : null;
                                 if (filter != null) filterClass = filter.getClass().getName();
                             }
@@ -74,7 +72,7 @@ public class GlassFishFilterProbe {
                     urls = (String[]) invokeMethod(fm, "getURLPatterns");
                 } catch (Exception e) {
                     try {
-                        Object urlPattern = getFieldValue(fm, "urlPattern");
+                        Object urlPattern = invokeMethod(fm, "getURLPattern");
                         if (urlPattern instanceof String) {
                             urls = new String[] { (String) urlPattern };
                         }
@@ -171,10 +169,12 @@ public class GlassFishFilterProbe {
         return contexts;
     }
 
-    @SuppressWarnings("all")
     public static Object invokeMethod(Object obj, String methodName) {
-        Class<?>[] paramClazz = null;
-        Object[] param = null;
+        return invokeMethod(obj, methodName, null, null);
+    }
+
+    @SuppressWarnings("all")
+    public static Object invokeMethod(Object obj, String methodName, Class<?>[] paramClazz, Object[] param) {
         try {
             Class<?> clazz = (obj instanceof Class) ? (Class<?>) obj : obj.getClass();
             Method method = null;
