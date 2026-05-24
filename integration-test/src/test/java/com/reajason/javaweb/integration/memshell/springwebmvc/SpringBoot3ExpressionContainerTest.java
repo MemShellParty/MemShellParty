@@ -1,7 +1,6 @@
 package com.reajason.javaweb.integration.memshell.springwebmvc;
 
 import com.reajason.javaweb.Server;
-import com.reajason.javaweb.integration.ContainerTool;
 import com.reajason.javaweb.integration.ShellAssertion;
 import com.reajason.javaweb.memshell.ShellTool;
 import com.reajason.javaweb.memshell.ShellType;
@@ -14,7 +13,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
