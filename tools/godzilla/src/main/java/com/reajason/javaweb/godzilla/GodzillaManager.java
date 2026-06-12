@@ -187,10 +187,8 @@ public class GodzillaManager implements Closeable {
                 if (setCookie != null && setCookie.contains("JSESSIONID=")) {
                     cookie = setCookie.substring(setCookie.indexOf("JSESSIONID="), setCookie.indexOf(";"));
                 }
-                if (response.isSuccessful()) {
-                    return true;
-                }
                 System.out.println(response.body().string().trim());
+                return true;
             }
         }
         if (isWs()) {

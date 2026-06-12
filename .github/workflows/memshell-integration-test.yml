@@ -50,6 +50,8 @@ jobs:
             depend_tasks: ""
           - middleware: "struts2"
             depend_tasks: ":vul:vul-struts2:war"
+          - middleware: "jenkins"
+            depend_tasks: ""
     runs-on: ubuntu-22.04
     name: ${{ matrix.cases.middleware }}
     steps:
