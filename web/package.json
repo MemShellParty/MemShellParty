@@ -63,8 +63,5 @@
     "vite": "^8.1.0",
     "vite-plugin-devtools-json": "^1.0.0",
     "vite-tsconfig-paths": "^6.1.1"
-  },
-  "patchedDependencies": {
-    "@react-router/dev@8.0.1": "patches/@react-router%2Fdev@8.0.1.patch"
   }
 }
