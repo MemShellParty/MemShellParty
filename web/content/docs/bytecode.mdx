@@ -1,0 +1,189 @@
+---
+title: 字节码工具
+description: 在 Web 端或 API 中转换、重写与打包任意 class
+---
+
+字节码工具处理单个 `.class`：Base64 / GzipBase64 与 class 互转，按需改名、替换包名、添加入口方法、嵌入回显马，最后交给打包方式输出。它和内存马 / 探测马生成器共用同一套字节码处理逻辑，只是不生成注入器，也不需要选择注入类型。
+
+入口：顶部导航「字节码工具」（`/bytecode`），或直接调用 `/api/bytecode/decode` 与 `/api/bytecode/transform`。
+
+### 类输入
+
+两种输入方式互斥：
+
+- **Base64 / GzipBase64**：粘贴文本，空格与换行会被忽略；解码后以 gzip 魔数开头的值会先解压
+- **.class 文件**：选择单个文件
+
+类字节上限为 8 MiB（GzipBase64 按解压后计算），超过直接报错。解析成功后右侧展示类名、大小与 CFR 反编译的「原始源码」，解析完成前「转换」按钮不可用。
+
+### 随机类名与类名
+
+解析成功后默认关闭随机类名，并填入输入类的全限定名。
+
+- 关闭随机：修改「类名」。只填简单类名时保留原包名，例如 `com.example.Payload` 填 `RenamedPayload` 得到 `com.example.RenamedPayload`；填全限定名则完全替换
+- 开启随机：由后端生成随机包名与类名，「类名」输入框不生效
+
+改名会同时改写类内部对自身的引用，不是只改文件名。带内部类的类请把内部类文件一并转换，否则外部类改名后引用与内部类自身的名字会对不上。
+
+SpringGzipJDK17 系列打包方式要求类位于 `org.springframework.expression` 包下，选择这类打包方式时后端会强制生成该包下的类名，覆盖随机或手填的类名。
+
+### 包名替换
+
+开启后填写「原包名前缀」与「新包名前缀」，两个都必须填。字节码中所有等于前缀或以 `前缀/` 开头的类型引用都会被重写，包括类自身、父类、接口、字段、方法描述符与方法体指令。典型用途：
+
+```text
+javax.servlet  -> jakarta.servlet
+com.example.v1 -> com.example.v2
+```
+
+一次只能替换一个前缀。同时引用了 `javax.servlet` 与 `javax.websocket` 的类需要分两次转换。
+
+### 入口方法
+
+开启后填写 Java 方法签名，例如：
+
+```text
+public static String exec(String value)
+```
+
+生成的方法体固定为 `new <最终类名>().toString()`，用于给类补一个可直接调用的入口。限制：
+
+- 类必须有无参构造方法
+- 返回类型只支持 `void` 或 `String`
+- 参数支持基本类型、数组与可变参数（可变参数必须是最后一个）；不写可见性时默认 `public`
+- 方法名不能与类的简单名相同，也不能与已存在的同参数方法重复
+- Java 8 之前的接口不能添加静态方法
+
+入口方法在改名、替换包名、缩小与混淆之后添加，因此方法名不会被混淆。开启回显模式时，入口方法加到回显 Wrapper 上，而不是被内嵌的类上。
+
+### 回显模式
+
+开启后，转换后的类会被 gzip + Base64 内嵌进一个探测马（回显 Wrapper），产物类名变为 `<类名>Wrapper`。Wrapper 被漏洞点加载并实例化时，会加载内嵌类、实例化并回显 `toString()`，原理与[探测马的 Bytecode 内容](/docs/probeshell-core-config#bytecode)一致。
+
+- **服务类型**：Writer 据此定位当前请求，选错通常拿不到回显，可先用探测马的 Server 内容确认。可选值来自 `/api/config/probe/response/servers`
+- **探测方式**：ResponseBody 直接写响应体并关闭输出流；ResponseHeader 只写响应头，头名留空时自动生成 `X-` 随机名
+- 内嵌类必须有无参构造方法，回显内容由 `toString()` 决定
+- Wrapper 固定按 Java 6 生成；开启「静态初始化」时 Wrapper 也会添加静态代码块触发自身构造
+- 开启回显时，混淆会检查产物能否作为单个字符串常量嵌入 Wrapper，必要时按 STRONG → LIGHT → RENAME_ONLY 降级
+
+<Callout title="注意" type="warn">
+  ResponseBody / ResponseHeader 只支持探测马中列出的 Servlet 容器与框架。SpringWebFlux 等非 Servlet
+  运行时没有对应的 Writer，请改用探测马的 DNSLog 或 Sleep 方式验证。
+</Callout>
+
+### 代码混淆
+
+默认关闭。开启后基于 [class-obf](https://github.com/jar-analyzer/class-obf) 按 STRONG 基线混淆，类名保持不变。处理任意类时使用保守契约：`doFilter`、`service`、`invoke`、`handle`、`toString`、`equals`、`hashCode` 等常见容器入口与 Object 方法不会被改名。
+
+需要覆盖默认参数时，在「混淆参数」中每行填写一条 `key=value`，只写要修改的项：
+
+```text
+enableControlFlow=false
+methodBlackList=exec,main
+```
+
+完整参数见生成界面的「参数参考」（`/api/config/obfuscation/options`）；未知参数、类型或范围错误会直接拒绝转换。混淆失败会自动按 STRONG → LIGHT → RENAME_ONLY 降级，仍然失败才报错。
+
+SpEL 系打包方式受 10000 字符表达式上限约束，启用混淆时会自动关闭。
+
+### 缩小字节码
+
+默认开启。使用 ASM `SKIP_DEBUG` 移除 SourceFile、LineNumberTable、LocalVariableTable 等调试属性；关闭时不执行缩小处理。需要尽量小的载荷时保持开启。
+
+### 绕过模块限制
+
+开启后会在类中补一个静态代码块，写入使用 `sun.misc.Unsafe` 把当前类所在模块改成 `java.base` 的代码，用于 JDK 9+ 下反射调用 `defineClass`。类没有静态代码块时会自动补出。`module-info` 不能处理，会直接报错。
+
+### 静态初始化
+
+开启后会在类中写入静态代码块调用自身无参构造方法：
+
+```java
+static {
+    new Payload();
+}
+```
+
+适用于漏洞 sink 点只执行 `Class.forName(name, true, classLoader)`、不会 `newInstance()` 的场景。类必须有无参构造方法，否则报错；已有的静态代码块会保留，新代码追加在其后。开启回显时同样作用于 Wrapper。
+
+### 打包方式
+
+与内存马生成器共用同一套打包方式。留空或 `DefaultBase64` 时「打包结果」就是转换后类字节的 Base64；JSP、表达式、反序列化等打包方式会把同一个类包装成对应载荷。
+
+`FilelessAgent` 仅适用于 Agent 内存马生成结果，不能用于独立 class，选择后会报错。
+
+### 结果
+
+转换完成后多出两个页签：
+
+- **转换后 Class**：转换后的类名、大小与反编译源码；可复制源码、复制 Base64 或下载 `.class`
+- **打包结果**：所选打包方式的输出，可复制
+
+`classBytesBase64Str` 始终是未压缩的标准 Base64；gzip 只用于输入自动识别与回显 Wrapper 的内嵌常量。
+
+### 常见用法
+
+#### 把 javax 编译的类用于 Jakarta 容器
+
+开启「包名替换」，原包名前缀填 `javax.servlet`，新包名前缀填 `jakarta.servlet`，其余选项保持默认。转换后的类可以直接被 Jakarta 容器加载，父类与接口引用会同步更新。
+
+#### 给类补 main 方法
+
+开启「入口方法」，填写：
+
+```text
+public static void main(String[] args)
+```
+
+关闭回显模式，打包方式留空，下载转换后的 `.class` 即可。方法体内是 `new <类名>().toString()`，返回值会被丢弃；需要返回内容时用 `public static String xxx()`。
+
+#### 生成回显马验证类能否执行
+
+选择一个与目标一致的服务类型，探测方式选 ResponseBody，打包方式留空。把产物类字节交给漏洞点加载并实例化，响应中会出现类的 `toString()` 结果。没有回显时先确认服务类型是否正确，再尝试 ResponseHeader。
+
+### API
+
+#### 解码
+
+`POST /api/bytecode/decode`，请求体为 `text/plain` 的 Base64 / GzipBase64 文本：
+
+```bash
+curl -s -X POST http://127.0.0.1:8080/api/bytecode/decode \
+  -H 'Content-Type: text/plain' \
+  --data-binary @payload.b64
+```
+
+返回 `className`、`size` 与 `classBytesBase64Str`（未压缩的标准 Base64）。
+
+#### 转换
+
+`POST /api/bytecode/transform`，请求体为 JSON：
+
+```json
+{
+  "classBytesBase64": "yv66vg...",
+  "packer": "",
+  "byPassJavaModule": false,
+  "staticInitialize": false,
+  "shrink": true,
+  "renamePackage": true,
+  "relocateFrom": "javax.servlet",
+  "relocateTo": "jakarta.servlet",
+  "entryMethod": "",
+  "newClassName": "RenamedPayload",
+  "randomName": false,
+  "obfuscation": {
+    "enabled": false,
+    "options": {}
+  },
+  "server": "Unknown",
+  "probe": null
+}
+```
+
+- `classBytesBase64` 同样接受 GzipBase64
+- `obfuscation.options` 的值可传字符串、布尔、整数或数组；数组的字符串形式按逗号 / 分号拆分
+- `probe` 非空即开启回显：`{"probeMethod":"ResponseBody","probeContent":"Bytecode","respHeaderName":null}`。`probeContent` 固定为 `Bytecode`，`respHeaderName` 只在 ResponseHeader 时使用
+- 返回 `className`、`size`、`classBytesBase64Str` 与 `packResult`
+
+参数错误返回 400 与 `{"error":"..."}`，包括 Base64 非法、类名 / 包名不合法、缺少无参构造方法、未知混淆参数，以及打包方式不支持独立 class。
