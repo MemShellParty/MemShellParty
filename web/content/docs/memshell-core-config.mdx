@@ -9,7 +9,7 @@ description: 了解和使用那些可能用到的一键开关
 
 如果在以下列表中未找到，可先查看 [目标服务介绍](/docs/server-intro) 是否有提到
 
-如果仍然没有，则可提 [issue](https://github.com/ReaJason/MemShellParty/issues/new?template=%E8%AF%B7%E6%B1%82%E9%80%82%E9%85%8D.md) 请求适配
+如果仍然没有，则可提 [issue](https://github.com/MemShellParty/MemShellParty/issues/new?template=%E8%AF%B7%E6%B1%82%E9%80%82%E9%85%8D.md) 请求适配
 
 <div className="server-type-checklist">
 
@@ -145,7 +145,7 @@ public void doFilter(ServletRequest servletRequest, ServletResponse servletRespo
 }
 ```
 
-调试所用的打印代码默认是写在模板中的，因此当关闭调试模式的时候，我们会使用字节码修改技术对打印调试信息的函数调用进行删除，详细实现可参考：[LogRemoveMethodVisitor.java](https://github.com/ReaJason/MemShellParty/blob/master/memshell-party-common/src/main/java/com/reajason/javaweb/buddy/LogRemoveMethodVisitor.java)，也就是把以下几类函数调用给去除
+调试所用的打印代码默认是写在模板中的，因此当关闭调试模式的时候，我们会使用字节码修改技术对打印调试信息的函数调用进行删除，详细实现可参考：[LogRemoveMethodVisitor.java](https://github.com/MemShellParty/MemShellParty/blob/master/memshell-party-common/src/main/java/com/reajason/javaweb/buddy/LogRemoveMethodVisitor.java)，也就是把以下几类函数调用给去除
 
 ```java
 System.out.println(msg) //（printf 还不支持）

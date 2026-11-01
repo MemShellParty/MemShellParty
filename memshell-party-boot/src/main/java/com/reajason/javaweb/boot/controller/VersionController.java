@@ -65,7 +65,7 @@ public class VersionController {
     }
 
     private String tryFetchRelease(String baseUrl) {
-        String apiUrl = String.format("%s/repos/%s/%s/releases", baseUrl, "ReaJason", "MemShellParty");
+        String apiUrl = String.format("%s/repos/%s/%s/releases", baseUrl, "MemShellParty", "MemShellParty");
 
         ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
                 apiUrl,

@@ -23,7 +23,7 @@ mavenPublishing {
         // Modules assign description after the plugins block, so read it once evaluation ends.
         val pomDescription = description
         project.afterEvaluate { pomDescription.set(project.description) }
-        url.set("https://github.com/ReaJason/MemShellParty")
+        url.set("https://github.com/MemShellParty/MemShellParty")
         inceptionYear.set("2025")
         licenses {
             license {
@@ -39,9 +39,9 @@ mavenPublishing {
             }
         }
         scm {
-            connection.set("scm:git:https://github.com/ReaJason/MemShellParty.git")
-            developerConnection.set("scm:git:ssh://github.com/ReaJason/MemShellParty.git")
-            url.set("https://github.com/ReaJason/MemShellParty")
+            connection.set("scm:git:https://github.com/MemShellParty/MemShellParty.git")
+            developerConnection.set("scm:git:ssh://github.com/MemShellParty/MemShellParty.git")
+            url.set("https://github.com/MemShellParty/MemShellParty")
         }
     }
 }

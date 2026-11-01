@@ -2,7 +2,7 @@ FROM --platform=$BUILDPLATFORM  buildpack-deps:bullseye-scm AS source
 
 WORKDIR /usr/src
 
-RUN git clone --depth 1 https://github.com/ReaJason/MemShellParty.git . && \
+RUN git clone --depth 1 https://github.com/MemShellParty/MemShellParty.git . && \
     rm -rf vul integration-test tools
 
 # https://hub.docker.com/r/oven/bun

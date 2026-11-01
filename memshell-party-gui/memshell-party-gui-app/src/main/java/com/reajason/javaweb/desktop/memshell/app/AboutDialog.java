@@ -30,7 +30,7 @@ import java.net.URI;
  * 项目地址点击后尝试打开浏览器，失败则复制到剪贴板兜底；Esc / 关闭按钮仅隐藏，实例可复用。
  */
 public class AboutDialog extends JDialog {
-    private static final String PROJECT_URL = "https://github.com/ReaJason/MemShellParty";
+    private static final String PROJECT_URL = "https://github.com/MemShellParty/MemShellParty";
     private static final Color FALLBACK_LINK = new Color(0x2A, 0x65, 0xB8);
 
     public AboutDialog(Window owner) {

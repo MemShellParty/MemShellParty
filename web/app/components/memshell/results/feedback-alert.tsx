@@ -40,7 +40,7 @@ export function FeedbackAlert() {
           <AlertDialogAction
             onClick={() =>
               window.open(
-                "https://github.com/ReaJason/MemShellParty/issues/new?template=%E5%86%85%E5%AD%98%E9%A9%AC%E7%94%9F%E6%88%90-bug-%E4%B8%8A%E6%8A%A5.md",
+                "https://github.com/MemShellParty/MemShellParty/issues/new?template=%E5%86%85%E5%AD%98%E9%A9%AC%E7%94%9F%E6%88%90-bug-%E4%B8%8A%E6%8A%A5.md",
               )
             }
           >

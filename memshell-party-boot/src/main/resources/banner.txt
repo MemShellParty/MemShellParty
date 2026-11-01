@@ -5,6 +5,6 @@
 |_|  |_|\___|_| |_| |_|____/|_| |_|\___|_|_|_|   \__,_|_|   \__|\__, |
                                                                 |___/
  Author: ReaJason
- Repo: https://github.com/ReaJason/MemShellParty
+ Repo: https://github.com/MemShellParty/MemShellParty
  ===================================================================
  ::${AnsiColor.BRIGHT_GREEN} MemShell Party ${AnsiColor.DEFAULT}::                                       (v${application.version})

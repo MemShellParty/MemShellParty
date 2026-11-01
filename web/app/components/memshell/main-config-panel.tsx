@@ -250,7 +250,7 @@ export default function MainConfigPanel({
                         </span>
                       </FieldLabel>
                       <a
-                        href="https://github.com/ReaJason/MemShellParty/issues/new?template=%E8%AF%B7%E6%B1%82%E9%80%82%E9%85%8D.md"
+                        href="https://github.com/MemShellParty/MemShellParty/issues/new?template=%E8%AF%B7%E6%B1%82%E9%80%82%E9%85%8D.md"
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center text-xs text-muted-foreground underline underline-offset-4 hover:text-primary"

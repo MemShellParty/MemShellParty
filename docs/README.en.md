@@ -5,7 +5,7 @@
 
 <div align="center">
 
-[![release](https://img.shields.io/github/v/release/reajason/memshellparty?label=Release&style=flat-square)](https://github.com/ReaJason/MemShellParty/releases)
+[![release](https://img.shields.io/github/v/release/MemShellParty/MemShellParty?label=Release&style=flat-square)](https://github.com/MemShellParty/MemShellParty/releases)
 [![MavenCentral](https://img.shields.io/maven-central/v/io.github.reajason/generator?label=MavenCentral&style=flat-square)](https://central.sonatype.com/artifact/io.github.reajason/generator)
 [![docker-pulls](https://img.shields.io/docker/pulls/reajason/memshell-party?label=DockerHub%20Pulls&style=flat-square)](https://hub.docker.com/r/reajason/memshell-party)
 </div>
@@ -76,7 +76,7 @@ docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.nju
 
 > Ideal when you don't want to deploy the web service — a single double-clickable Jar.
 
-Download `memshell-party-gui-x.y.z.jar` from [Releases](https://github.com/ReaJason/MemShellParty/releases), then double-click it or launch from the command line:
+Download `memshell-party-gui-x.y.z.jar` from [Releases](https://github.com/MemShellParty/MemShellParty/releases), then double-click it or launch from the command line:
 
 ```bash
 java -jar memshell-party-gui-x.y.z.jar
@@ -84,7 +84,7 @@ java -jar memshell-party-gui-x.y.z.jar
 
 Runtime requirements: JDK 8+ on Windows / Linux; JDK 26+ recommended on macOS (JDK 8 has no HiDPI scaling so the UI looks blurry, and JDK 17/21 on macOS 26 have a font rendering issue).
 
-To try features still in development, grab the `desktop-gui` build artifact from a [Dev Deploy](https://github.com/ReaJason/MemShellParty/actions/workflows/dev-deploy.yaml) workflow run (kept for 7 days).
+To try features still in development, grab the `desktop-gui` build artifact from a [Dev Deploy](https://github.com/MemShellParty/MemShellParty/actions/workflows/dev-deploy.yaml) workflow run (kept for 7 days).
 
 ### MCP Server (for other agents)
 

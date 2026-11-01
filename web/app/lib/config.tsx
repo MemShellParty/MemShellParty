@@ -26,8 +26,8 @@ const docsUrl = `/${basePath ? `${basePath}/` : ""}docs`;
 export const siteConfig = {
   name: "MemShellParty",
   url: "https://party.memshell.news",
-  github: "https://github.com/ReaJason/MemShellParty",
-  latestRelease: "https://github.com/ReaJason/MemShellParty/releases/latest",
+  github: "https://github.com/MemShellParty/MemShellParty",
+  latestRelease: "https://github.com/MemShellParty/MemShellParty/releases/latest",
   author: "ReaJason",
   authorGithub: "https://github.com/ReaJason",
   authorIntro: "Java RASP Developer",

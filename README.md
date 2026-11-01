@@ -5,7 +5,7 @@
 
 <div align="center">
 
-[![release](https://img.shields.io/github/v/release/reajason/memshellparty?label=Release&style=flat-square)](https://github.com/ReaJason/MemShellParty/releases)
+[![release](https://img.shields.io/github/v/release/MemShellParty/MemShellParty?label=Release&style=flat-square)](https://github.com/MemShellParty/MemShellParty/releases)
 [![MavenCentral](https://img.shields.io/maven-central/v/io.github.reajason/generator?label=MavenCentral&style=flat-square)](https://central.sonatype.com/artifact/io.github.reajason/generator)
 [![docker-pulls](https://img.shields.io/docker/pulls/reajason/memshell-party?label=DockerHub%20Pulls&style=flat-square)](https://hub.docker.com/r/reajason/memshell-party)
 </div>
@@ -84,7 +84,7 @@ docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.nju
 
 > 适合不想部署 Web 服务的场景，单个 Jar 双击即用
 
-从 [Releases](https://github.com/ReaJason/MemShellParty/releases) 下载 `memshell-party-gui-x.y.z.jar`，双击运行，或命令行启动（JDK 8+）：
+从 [Releases](https://github.com/MemShellParty/MemShellParty/releases) 下载 `memshell-party-gui-x.y.z.jar`，双击运行，或命令行启动（JDK 8+）：
 
 ```bash
 java -jar memshell-party-gui-x.y.z.jar
@@ -96,7 +96,7 @@ boot 与桌面完整发行版也支持外置 SPI 插件：将实现 `ServerProvi
 
 > 已经开着 Woodpecker 的时候，不用另开桌面端 / Web 端，直接在里面生成
 
-从 [Releases](https://github.com/ReaJason/MemShellParty/releases) 下载 `memshell-party-woodpecker-x.y.z.jar`，放进 Woodpecker 根目录的 `plugin/` 里重启框架即可：
+从 [Releases](https://github.com/MemShellParty/MemShellParty/releases) 下载 `memshell-party-woodpecker-x.y.z.jar`，放进 Woodpecker 根目录的 `plugin/` 里重启框架即可：
 
 ```bash
 cp memshell-party-woodpecker-x.y.z.jar /path/to/woodpecker/plugin/
@@ -104,8 +104,8 @@ cp memshell-party-woodpecker-x.y.z.jar /path/to/woodpecker/plugin/
 
 ## 贡献者
 
-<a href="https://github.com/ReaJason/MemShellParty/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ReaJason/MemShellParty" width="20%" />
+<a href="https://github.com/MemShellParty/MemShellParty/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=MemShellParty/MemShellParty" width="20%" />
 </a>
 
 ## Special Thanks
