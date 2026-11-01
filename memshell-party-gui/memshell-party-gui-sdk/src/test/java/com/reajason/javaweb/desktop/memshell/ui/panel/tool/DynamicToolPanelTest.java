@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * 动态参数面板的字段名与占位提示：{@code @ConfigField} 写了就用注解上的，没写才回落内置参数表
- * —— 插件工具（Dandelion 这类）没在内置表里登记过，中文名与语义提示只能靠注解带出来。
+ * —— 插件工具没在内置表里登记过，中文名与语义提示只能靠注解带出来。
  */
 class DynamicToolPanelTest {
 

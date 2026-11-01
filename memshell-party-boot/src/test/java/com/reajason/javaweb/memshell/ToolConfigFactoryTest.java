@@ -119,7 +119,7 @@ class ToolConfigFactoryTest {
 
     /**
      * 工具没选/选了个没注册的名字时，要报「不支持的工具」而不是 ConcurrentHashMap 的 NPE
-     * —— 界面上传的是自由文本（Dandelion 的 JMG 面板就是），错误得能显示给人看。
+     * —— 界面上传的是自由文本，错误得能显示给人看。
      */
     @Test
     void missingToolIsReportedNotThrownAsNpe() {

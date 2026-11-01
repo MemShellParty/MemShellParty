@@ -6,7 +6,7 @@ CFR 反编译工具 `DecompileFrame` —— 加上扩展点。
 页签怎么排、状态栏长什么样、「关于」放哪儿、外壳是什么牌子，都是宿主自己的事
 （官方完整发行版的外壳见 `memshell-party-gui-app`）。
 下游把它当普通依赖引入，就有能生成内存马/探测马、反编译类字节的界面，按自己的布局装进产品里 ——
-不用自己从零写一套 Swing 生成器（[dandelion-client](https://github.com/ReaJason/dandelion)
+不用自己从零写一套 Swing 生成器
 那种自带 shelltool 的客户端就是目标场景）。
 
 ## 两个 GUI 模块的分工
