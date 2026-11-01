@@ -1,7 +1,7 @@
 package com.reajason.javaweb.packer.jar.agent;
 
 import com.reajason.javaweb.asm.ClassRenameUtils;
-import com.reajason.javaweb.fileless.FilelessAgentBootstrap;
+import com.reajason.javaweb.packer.jar.agent.fileless.FilelessAgentBootstrap;
 import com.reajason.javaweb.utils.CommonUtil;
 import com.reajason.javaweb.utils.IOUtils;
 import org.objectweb.asm.ClassReader;
@@ -29,12 +29,13 @@ import java.util.jar.JarFile;
 import java.util.zip.GZIPOutputStream;
 
 final class FilelessPayloadAssembler {
-    private static final String RUNTIME_PACKAGE = "com.reajason.javaweb.fileless";
+    private static final String RUNTIME_PACKAGE = "com.reajason.javaweb.packer.jar.agent.fileless";
     private static final String RUNTIME_PACKAGE_PATH = RUNTIME_PACKAGE.replace('.', '/');
     private static final String BOOTSTRAP_CLASS = RUNTIME_PACKAGE + ".FilelessAgentBootstrap";
     private static final String PROVIDER_CLASS = RUNTIME_PACKAGE + ".InstrumentationProvider";
     private static final int PAYLOAD_MAGIC = 0x464c4131;
     private static final int CHUNK_LENGTH = 60000;
+    private static final int TARGET_CLASS_VERSION = Opcodes.V1_6;
 
     byte[] assemble(byte[] agentJar) throws Exception {
         Map<String, byte[]> runtimeClasses = readRuntimeClasses();
@@ -77,6 +78,7 @@ final class FilelessPayloadAssembler {
                 }
             }
         }
+        classes.replaceAll((className, classBytes) -> java6(classBytes));
         byte[] provider = classes.remove(PROVIDER_CLASS);
         if (provider == null) {
             throw new IOException("Missing fileless runtime classes at " + location);
@@ -128,6 +130,23 @@ final class FilelessPayloadAssembler {
                 classes.put(name.substring(0, name.length() - 6).replace('/', '.'), IOUtils.toByteArray(input));
             }
         }
+    }
+
+    /**
+     * 运行时类随模块按 Java 8 编译；嵌入 payload 的副本统一降为 class-file 50（JRE 6），
+     * 与 Attacher 打包进 jar 时改写 class 版本的做法一致。
+     */
+    private static byte[] java6(byte[] classBytes) {
+        ClassReader reader = new ClassReader(classBytes);
+        ClassWriter writer = new ClassWriter(reader, 0);
+        reader.accept(new ClassVisitor(Opcodes.ASM9, writer) {
+            @Override
+            public void visit(int version, int access, String name, String signature,
+                              String superName, String[] interfaces) {
+                super.visit(TARGET_CLASS_VERSION, access, name, signature, superName, interfaces);
+            }
+        }, 0);
+        return writer.toByteArray();
     }
 
     private static byte[] bundle(Map<String, byte[]> classes, byte[] agentJar) throws IOException {

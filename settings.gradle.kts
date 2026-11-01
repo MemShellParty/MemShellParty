@@ -43,7 +43,6 @@ include("memshell-party-stub:memshell-party-stub-tomcat")
 // Core modules
 include("memshell-party-api")
 include("memshell-party-core")
-include("memshell-party-fileless")
 
 // Server modules
 // 所有 servlet 容器共用一个模块：各容器的模板父类签名桩与 SPI 注册同处一份产物，

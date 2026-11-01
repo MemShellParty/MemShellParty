@@ -1,8 +1,8 @@
 package com.reajason.javaweb.packer.jar.agent;
 
 import com.reajason.javaweb.asm.ClassRenameUtils;
-import com.reajason.javaweb.fileless.FilelessAgentBootstrap;
-import com.reajason.javaweb.fileless.JarLoader;
+import com.reajason.javaweb.packer.jar.agent.fileless.FilelessAgentBootstrap;
+import com.reajason.javaweb.packer.jar.agent.fileless.JarLoader;
 import com.reajason.javaweb.memshell.MemShellResult;
 import com.reajason.javaweb.memshell.ShellType;
 import com.reajason.javaweb.memshell.config.ShellConfig;
@@ -54,7 +54,7 @@ class FilelessAgentPackerTest {
         assertTrue((bootstrapReader.getAccess() & Opcodes.ACC_PUBLIC) != 0);
         assertFalse(bootstrapName.startsWith("com/reajason/"), bootstrapName);
         assertTrue(bootstrapName.endsWith("/FilelessAgentBootstrap"), bootstrapName);
-        assertNotEquals("com/reajason/javaweb/fileless/FilelessAgentBootstrap", bootstrapName);
+        assertNotEquals(FilelessAgentBootstrap.class.getName().replace('.', '/'), bootstrapName);
         assertFalse(JarPacker.class.isAssignableFrom(FilelessAgentPacker.class));
 
         Class<?> bootstrap = new SingleClassLoader(getClass().getClassLoader()).define(delivered);

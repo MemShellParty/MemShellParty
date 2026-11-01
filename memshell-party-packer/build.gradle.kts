@@ -11,8 +11,8 @@ sourceSets {
 
 dependencies {
     api(project(":memshell-party-api"))
+    "fixturesImplementation"(sourceSets.main.get().output)
     testImplementation(sourceSets["fixtures"].output)
-    implementation(project(":memshell-party-fileless"))
     compileOnly(libs.metainf.services)
     annotationProcessor(libs.metainf.services)
     implementation(libs.bcel)
@@ -61,25 +61,59 @@ tasks.check {
     dependsOn(noJnaTest)
 }
 
+/**
+ * fileless Agent 运行时按 Java 8 编译，装配 payload 时由 FilelessPayloadAssembler 把副本降为
+ * class-file 50；验证 fixture 在目标 JRE 6 上直接加载类文件，这里按同一规则降版本。
+ */
+val java6FilelessRuntime = tasks.register<Sync>("java6FilelessRuntime") {
+    group = "verification"
+    description = "Copies the fileless Agent runtime with class-file version 50 for JRE 6 fixtures."
+    from(sourceSets.main.get().output) {
+        include("com/reajason/javaweb/packer/jar/agent/fileless/**")
+    }
+    into(layout.buildDirectory.dir("generated/fileless-java6"))
+    doLast {
+        destinationDir.walkTopDown()
+            .filter { it.extension == "class" }
+            .forEach { file ->
+                val bytes = file.readBytes()
+                bytes[6] = 0
+                bytes[7] = 50
+                file.writeBytes(bytes)
+            }
+    }
+}
+
+val nativeFixtureJar = tasks.register<Jar>("nativeFixtureJar") {
+    group = "verification"
+    description = "Builds the no-javaagent Instrumentation and retransformation fixture."
+    archiveBaseName.set("native-fileless-fixture")
+    archiveVersion.set("")
+    destinationDirectory.set(layout.buildDirectory.dir("verification"))
+    manifest {
+        attributes["Main-Class"] = "com.reajason.javaweb.packer.jar.agent.fileless.NativeAgentFixture"
+    }
+    from(java6FilelessRuntime)
+    from(sourceSets["fixtures"].output) {
+        include(
+            "com/reajason/javaweb/packer/jar/agent/fileless/NativeAgentFixture*.class",
+            "com/reajason/javaweb/packer/jar/agent/fileless/WindowsNativeAgentFixture.class",
+            "com/reajason/javaweb/packer/jar/agent/fileless/WindowsPackedAgentFixture*.class",
+            "com/reajason/javaweb/packer/jar/agent/fileless/RetransformFixture.class"
+        )
+    }
+}
+
 val windowsPackedFixtureJar = tasks.register<JavaExec>("windowsPackedFixtureJar") {
     group = "verification"
     description = "Builds the real packed-bootstrap Windows retransformation fixture."
     classpath = sourceSets.test.get().runtimeClasspath
     mainClass.set("com.reajason.javaweb.packer.jar.agent.WindowsPackedFixtureGenerator")
-}
-
-// The fileless fixture task is registered by another project, so wire its output only
-// after every project has been configured.
-gradle.projectsEvaluated {
-    val filelessFixtureJar = project(":memshell-party-fileless").tasks
-        .named<Jar>("nativeFixtureJar")
-        .flatMap { it.archiveFile }
+    val filelessFixtureJar = nativeFixtureJar.flatMap { it.archiveFile }
     val outputJar = layout.buildDirectory.file("verification/windows-packed-fileless-fixture.jar")
-    windowsPackedFixtureJar.configure {
-        inputs.files(filelessFixtureJar)
-        outputs.file(outputJar)
-        doFirst {
-            args(filelessFixtureJar.get().asFile, outputJar.get().asFile)
-        }
+    inputs.files(filelessFixtureJar)
+    outputs.file(outputJar)
+    doFirst {
+        args(filelessFixtureJar.get().asFile, outputJar.get().asFile)
     }
 }

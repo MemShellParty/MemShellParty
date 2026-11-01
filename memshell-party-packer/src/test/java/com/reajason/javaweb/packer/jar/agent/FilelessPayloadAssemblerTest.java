@@ -1,6 +1,6 @@
 package com.reajason.javaweb.packer.jar.agent;
 
-import com.reajason.javaweb.fileless.FilelessAgentBootstrap;
+import com.reajason.javaweb.packer.jar.agent.fileless.FilelessAgentBootstrap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -25,12 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FilelessPayloadAssemblerTest {
-    private static final String RUNTIME_PACKAGE = "com.reajason.javaweb.fileless";
+    private static final String RUNTIME_PACKAGE = "com.reajason.javaweb.packer.jar.agent.fileless";
     private static final String RUNTIME_PACKAGE_PATH = RUNTIME_PACKAGE.replace('.', '/');
 
     @Test
     void readsRuntimeClassesFromNestedJarLocation(@TempDir Path tempDir) throws Exception {
-        Path runtimeJar = tempDir.resolve("memshell-party-fileless.jar");
+        Path runtimeJar = tempDir.resolve("fileless-runtime.jar");
         writeRuntimeJar(runtimeJar);
         URL jarFileUrl = runtimeJar.toUri().toURL();
         URLStreamHandler nestedHandler = new URLStreamHandler() {
@@ -62,6 +62,9 @@ class FilelessPayloadAssemblerTest {
         assertTrue(classes.containsKey(RUNTIME_PACKAGE + ".JarLoader"));
         assertTrue(classes.containsKey(RUNTIME_PACKAGE + ".JarLoader$MemoryURLConnection"));
         assertTrue(classes.containsKey(RUNTIME_PACKAGE + ".JarLoader$MemoryURLStreamHandler"));
+        for (byte[] classBytes : classes.values()) {
+            assertEquals(50, ((classBytes[6] & 0xff) << 8) | (classBytes[7] & 0xff));
+        }
     }
 
     private static void writeRuntimeJar(Path runtimeJar) throws Exception {

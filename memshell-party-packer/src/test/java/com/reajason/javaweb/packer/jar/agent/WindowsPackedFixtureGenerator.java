@@ -21,7 +21,7 @@ import java.util.jar.Manifest;
 
 /** Builds the standalone Windows fixture from the same packed bootstrap delivered to users. */
 public final class WindowsPackedFixtureGenerator {
-    private static final String PACKAGE = "com.reajason.javaweb.fileless.";
+    private static final String PACKAGE = "com.reajason.javaweb.packer.jar.agent.fileless.";
     private static final String AGENT = PACKAGE + "WindowsPackedAgentFixture";
 
     private WindowsPackedFixtureGenerator() {
