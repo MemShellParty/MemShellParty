@@ -112,17 +112,6 @@ jobs:
             memshell-party-gui/memshell-party-gui-shiro-exploit/build/libs/memshell-party-shiro-exploit-*.jar
             !memshell-party-gui/memshell-party-gui-shiro-exploit/build/libs/*-plain.jar
 
-      - name: Build Custom GUI Example with Gradle
-        run: ./gradlew :memshell-party-examples:memshell-party-example-custom-gui:shadowJar -x test
-
-      - name: Upload Custom GUI Example Jar
-        uses: actions/upload-artifact@v7
-        with:
-          name: custom-gui
-          # 只要全量包：-plain.jar 是 application 插件用的空壳（一个入口类）
-          path: |
-            memshell-party-examples/memshell-party-example-custom-gui/build/libs/memshell-party-custom-gui-*.jar
-            !memshell-party-examples/memshell-party-example-custom-gui/build/libs/*-plain.jar
 
   docker-push:
     name: Docker Push
@@ -167,18 +156,6 @@ jobs:
             docker.io/reajason/memshell-party:latest
             ghcr.io/reajason/memshell-party:${{ needs.info.outputs.version-without-v }}
             ghcr.io/reajason/memshell-party:latest
-
-      - name: Build and push RedQueen
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          build-args: |
-            ROUTE_ROOT_PATH=/redqueen-memshell-party
-            CONTEXT_PATH=/redqueen-memshell-party
-          push: true
-          tags: |
-            docker.io/reajason/memshell-party:redqueen
 
   deploy-maven:
     name: Deploy to Maven Central
@@ -243,12 +220,6 @@ jobs:
           name: shiro-exploit
           path: memshell-party-gui/memshell-party-gui-shiro-exploit/build/libs
 
-      - name: Download Custom GUI Example Jar
-        uses: actions/download-artifact@v4
-        with:
-          name: custom-gui
-          path: memshell-party-examples/memshell-party-example-custom-gui/build/libs
-
       - name: Release
         uses: ncipollo/release-action@v1
         with:
@@ -261,7 +232,6 @@ jobs:
             memshell-party-gui/memshell-party-gui-woodpecker/build/libs/memshell-party-woodpecker-${{ needs.info.outputs.version-without-v }}.jar
             memshell-party-gui/memshell-party-gui-godzilla-plugin/build/libs/memshell-party-godzilla-${{ needs.info.outputs.version-without-v }}.jar
             memshell-party-gui/memshell-party-gui-shiro-exploit/build/libs/memshell-party-shiro-exploit-${{ needs.info.outputs.version-without-v }}.jar
-            memshell-party-examples/memshell-party-example-custom-gui/build/libs/memshell-party-custom-gui-${{ needs.info.outputs.version-without-v }}.jar
 
   deploy-northflank:
     name: Deploy to Northflank
