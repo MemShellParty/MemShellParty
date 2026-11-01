@@ -120,5 +120,3 @@ include("memshell-party-gui:memshell-party-gui-woodpecker")
 include("memshell-party-gui:memshell-party-gui-godzilla-plugin")
 // Shiro-550 利用工具：自包含的桌面发行物（探测/爆破/注入流水线），随 Release 发布
 include("memshell-party-gui:memshell-party-gui-shiro-exploit")
-// FineReport V10 利用工具：自包含的桌面发行物（探测/模板注入/channel 反序列化流水线），随 Release 发布
-include("memshell-party-gui:memshell-party-gui-fr-exploit")
