@@ -4,6 +4,17 @@ on:
   push:
     tags:
       - 'v*'
+  # Recovery entry: finish a release whose Maven deployment already exists, or
+  # re-run the distribution steps without touching an already-published version.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to build, e.g. v3.0.0 (must match an existing tag)'
+        required: true
+      skip-maven:
+        description: 'Skip Maven Central publish (version already released)'
+        type: boolean
+        default: false
 
 jobs:
   info:
@@ -18,8 +29,10 @@ jobs:
 
       - name: Get Version
         id: get_version
+        env:
+          DISPATCH_VERSION: ${{ inputs.version }}
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${DISPATCH_VERSION:-${GITHUB_REF#refs/tags/}}
           VERSION_WITHOUT_V=${VERSION#v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "version-without-v=$VERSION_WITHOUT_V" >> $GITHUB_OUTPUT
@@ -148,6 +161,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      # GHCR image names must be lowercase; the org display name keeps its case.
+      - name: Compute GHCR namespace
+        id: ghcr
+        run: echo "namespace=ghcr.io/$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
@@ -157,11 +175,12 @@ jobs:
           tags: |
             docker.io/reajason/memshell-party:${{ needs.info.outputs.version-without-v }}
             docker.io/reajason/memshell-party:latest
-            ghcr.io/${{ github.repository_owner }}/memshell-party:${{ needs.info.outputs.version-without-v }}
-            ghcr.io/${{ github.repository_owner }}/memshell-party:latest
+            ${{ steps.ghcr.outputs.namespace }}/memshell-party:${{ needs.info.outputs.version-without-v }}
+            ${{ steps.ghcr.outputs.namespace }}/memshell-party:latest
 
   deploy-maven:
     name: Deploy to Maven Central
+    if: ${{ inputs.skip-maven != true }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

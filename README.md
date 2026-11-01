@@ -74,10 +74,10 @@ boot 服务内置了符合最新 MCP 协议规范（Streamable HTTP 传输）的
 docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party reajason/memshell-party:latest
 
 # 使用 Github Container Registry 源，拉取最新的镜像
-docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.io/MemShellParty/memshell-party:latest
+docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.io/memshellparty/memshell-party:latest
 
 # 网络质量不太好？使用南大 Github Container Registry 镜像源
-docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.nju.edu.cn/MemShellParty/memshell-party:latest
+docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.nju.edu.cn/memshellparty/memshell-party:latest
 ```
 
 ### Java Swing 桌面版
