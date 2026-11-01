@@ -66,10 +66,10 @@ After deploying with Docker, access http://127.0.0.1:8080
 docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party reajason/memshell-party:latest
 
 # Pull the latest image from Github Container Registry
-docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.io/reajason/memshell-party:latest
+docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.io/MemShellParty/memshell-party:latest
 
 # Poor network quality? Use the Nanjing University Github Container Registry mirror
-docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.nju.edu.cn/reajason/memshell-party:latest
+docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.nju.edu.cn/MemShellParty/memshell-party:latest
 ```
 
 ### Desktop App (Swing GUI)

@@ -11,7 +11,7 @@ import java.awt.event.ComponentEvent;
 /**
  * 结果区 Base64/源码展示文本区。
  *
- * <p>只读 JTextArea 对超长无空格单词做字符级断行会触发 macOS 26 + JDK<26 的字形缓存污染
+ * <p>只读 JTextArea 对超长无空格单词做字符级断行会触发 macOS 26 + JDK&lt;26 的字形缓存污染
  * （整窗拉丁字形随机丢失，实测可致 JVM 崩溃），所以本组件永不打开 setLineWrap。
  * Base64 的多行展示效果与原生换行一致——跟随组件宽度自动重排——但换行是这里
  * 按「宽度 ÷ 字符宽」算列数后插入的显式 \n（{@link #showBase64}），文本区自己从不参与断行。

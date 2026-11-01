@@ -272,7 +272,7 @@ public class DecompileFrame extends JFrame {
 
     /**
      * 空白态的引导：说明两种输入方式。启动期可见文案同样遵守「拉丁段不被 CJK 夹中间」规则
-     * （见 ResultPanel 空态提示的注释：macOS 26 + JDK<26 下这种混排会污染字形缓存，整窗缺字）。
+     * （见 ResultPanel 空态提示的注释：macOS 26 + JDK&lt;26 下这种混排会污染字形缓存，整窗缺字）。
      */
     private JPanel buildEmptyHint() {
         JLabel title = new JLabel("尚未反编译");

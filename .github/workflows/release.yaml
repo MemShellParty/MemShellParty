@@ -117,6 +117,9 @@ jobs:
     name: Docker Push
     needs: [ info, build-jar ]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v6
 
@@ -154,8 +157,8 @@ jobs:
           tags: |
             docker.io/reajason/memshell-party:${{ needs.info.outputs.version-without-v }}
             docker.io/reajason/memshell-party:latest
-            ghcr.io/reajason/memshell-party:${{ needs.info.outputs.version-without-v }}
-            ghcr.io/reajason/memshell-party:latest
+            ghcr.io/${{ github.repository_owner }}/memshell-party:${{ needs.info.outputs.version-without-v }}
+            ghcr.io/${{ github.repository_owner }}/memshell-party:latest
 
   deploy-maven:
     name: Deploy to Maven Central
