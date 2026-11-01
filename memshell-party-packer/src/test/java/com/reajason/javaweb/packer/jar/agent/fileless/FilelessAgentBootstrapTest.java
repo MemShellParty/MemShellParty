@@ -70,8 +70,19 @@ class FilelessAgentBootstrapTest {
 
     @Test
     void rejectsUnknownRuntimeBeforeLoadingAgentWithoutInstrumentation() {
-        assertThrows(UnsupportedOperationException.class, () -> FilelessAgentBootstrap.install(
-                "missing.agent.MustNotBeInitialized", null));
+        // Linux CI 的 HotSpot 可能成功取得 Instrumentation，必须显式换成不支持的运行时。
+        String originalOsName = System.getProperty("os.name");
+        try {
+            System.setProperty("os.name", "FilelessAgentBootstrapTest-Unsupported");
+            assertThrows(UnsupportedOperationException.class, () -> FilelessAgentBootstrap.install(
+                    "missing.agent.MustNotBeInitialized", null));
+        } finally {
+            if (originalOsName == null) {
+                System.clearProperty("os.name");
+            } else {
+                System.setProperty("os.name", originalOsName);
+            }
+        }
     }
 
     static Instrumentation instrumentation(boolean redefine, boolean retransform) {
