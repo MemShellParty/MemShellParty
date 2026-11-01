@@ -46,20 +46,9 @@ include("memshell-party-core")
 include("memshell-party-fileless")
 
 // Server modules
-include("memshell-party-server:memshell-party-server-tomcat")
-include("memshell-party-server:memshell-party-server-jetty")
-include("memshell-party-server:memshell-party-server-jetty5")
-include("memshell-party-server:memshell-party-server-undertow")
-include("memshell-party-server:memshell-party-server-jboss")
-include("memshell-party-server:memshell-party-server-resin")
-include("memshell-party-server:memshell-party-server-resin2")
-include("memshell-party-server:memshell-party-server-weblogic")
-include("memshell-party-server:memshell-party-server-websphere")
-include("memshell-party-server:memshell-party-server-glassfish")
-include("memshell-party-server:memshell-party-server-tongweb")
-include("memshell-party-server:memshell-party-server-bes")
-include("memshell-party-server:memshell-party-server-inforsuite")
-include("memshell-party-server:memshell-party-server-apusic")
+// 所有 servlet 容器共用一个模块：各容器的模板父类签名桩与 SPI 注册同处一份产物，
+// 既避免为一个容器单独引入整条依赖链，也把 Maven Central 的发布文件数压到 1/14。
+include("memshell-party-server:memshell-party-server-servlet")
 include("memshell-party-server:memshell-party-server-spring-webmvc")
 include("memshell-party-server:memshell-party-server-spring-webflux")
 include("memshell-party-server:memshell-party-server-xxljob")

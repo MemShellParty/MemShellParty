@@ -14,7 +14,7 @@
 dependencies {
     implementation("io.github.reajason:memshell-party-core:<version>")            // MemShellGenerator
     implementation("io.github.reajason:memshell-party-packer:<version>")          // 打包/投递
-    implementation("io.github.reajason:memshell-party-server-tomcat:<version>")   // 本示例的目标容器
+    implementation("io.github.reajason:memshell-party-server-servlet:<version>")   // 内置 servlet 容器 provider
     implementation("io.github.reajason:memshell-party-shelltool-godzilla:<version>")
 }
 ```

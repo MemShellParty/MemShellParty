@@ -27,7 +27,7 @@ dependencies {
     testImplementation(project(":memshell-party-packer"))
     // 排除 Tomcat 桩：测试已用真 tomcat-embed-core 提供 catalina/coyote 签名，桩与它同包名，
     // 留在类路径上只会遮蔽真身（boot 上表现为 NoSuchMethodError: Adapter.getDomain()）
-    testImplementation(project(":memshell-party-server:memshell-party-server-tomcat")) {
+    testImplementation(project(":memshell-party-server:memshell-party-server-servlet")) {
         exclude(group = "io.github.reajason", module = "memshell-party-stub-tomcat")
     }
     testImplementation(project(":memshell-party-stub:memshell-party-stub-jetty"))

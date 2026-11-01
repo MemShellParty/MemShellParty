@@ -51,7 +51,7 @@ jobs:
       - name: Provider Unit Test with Gradle
         run: >
           ./gradlew
-          :memshell-party-server:memshell-party-server-tomcat:test
+          :memshell-party-server:memshell-party-server-servlet:test
           :memshell-party-shelltool:memshell-party-shelltool-godzilla:test
           :memshell-party-shelltool:memshell-party-shelltool-command:test
           :memshell-party-shelltool:memshell-party-shelltool-antsword:test

@@ -24,10 +24,8 @@ dependencies {
     compileOnly(libs.javax.servlet.api)
     // ProxyWebSocket: javax.websocket.*（WebLogic 通过 ServerContainer 注册端点）
     compileOnly(libs.javax.websocket.api)
-    testImplementation(project(":memshell-party-server:memshell-party-server-tomcat")) {
+    testImplementation(project(":memshell-party-server:memshell-party-server-servlet")) {
         exclude(group = "io.github.reajason", module = "memshell-party-stub-tomcat")
-    }
-    testImplementation(project(":memshell-party-server:memshell-party-server-jetty")) {
         exclude(group = "io.github.reajason", module = "memshell-party-stub-jetty")
     }
     testImplementation(project(":memshell-party-server:memshell-party-server-spring-webflux"))

@@ -26,7 +26,7 @@ dependencies {
     // 两个生成器界面与扩展点
     implementation("io.github.reajason:memshell-party-gui-sdk:<version>")
     // server 不随 SDK 走，用哪个引哪个（要全部就换成 memshell-party-server-all）
-    implementation("io.github.reajason:memshell-party-server-tomcat:<version>")
+    implementation("io.github.reajason:memshell-party-server-servlet:<version>")
 }
 ```
 

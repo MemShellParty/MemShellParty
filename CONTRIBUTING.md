@@ -13,7 +13,7 @@
 - memshell-party-api：对外 API（Server/ShellType/ShellConfig 等）与 SPI 接口
 - memshell-party-core：内存马生成核心（注册表、加载器、生成器）
 - memshell-party-common：bytebuddy/asm 等工具类存放
-- memshell-party-server/*：各中间件的 server 实现，一个中间件一个模块，通过 SPI 注册
+- memshell-party-server/*：各中间件的 server 实现，通过 SPI 注册；servlet 容器（Tomcat/Jetty/Undertow/JBoss/Resin/WebLogic/WebSphere/GlassFish/TongWeb/BES/InforSuite/Apusic）合并在 `memshell-party-server-servlet`，框架/协议 provider 仍是一个中间件一个模块
 - memshell-party-shelltool/*：各内存马工具的模板与配置，一个工具一个模块，通过 SPI 注册
 - memshell-party-stub/*：模板父类/注入器引用的生成期桩（dubbo、jetty、tomcat），只有类型名与签名是真的，方法体一律不实现。引用分两种：shelltool 模板用 compileOnly（编译期够用）；server 模块用 implementation（生成引擎按字节解析模板父链时要能在运行时类路径上找到），因此桩类会随 fat jar 一起发出去 —— 这是刻意的，见 memshell-party-server-dubbo、-jetty 与 -tomcat
 - memshell-party-boot：使用 SpringBoot 为 UI 提供生成服务
@@ -38,7 +38,7 @@
 ```bash
 # 编译生成核心 + 指定 server/shelltool 模块
 ./gradlew :memshell-party-core:build
-./gradlew :memshell-party-server:memshell-party-server-tomcat:build
+./gradlew :memshell-party-server:memshell-party-server-servlet:build
 ./gradlew :memshell-party-shelltool:memshell-party-shelltool-godzilla:build
 
 # 运行集成测试用例，谨慎运行，用例太多了

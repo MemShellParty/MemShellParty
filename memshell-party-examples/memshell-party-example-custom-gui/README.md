@@ -124,7 +124,7 @@ MemShellResult result = new MemShellGenerator().generate(
   默认 `EXCLUDE`，重复资源在进 transformer 前就被丢掉 —— 必须对 `META-INF/services/**`
   放开去重，否则合并结果只剩一条，构建却不报错。完整配方见本模块 `build.gradle.kts`，
   `FatJarServiceDiscoveryTest` 直接开包断言四类 SPI 的合并结果。
-- 测试内嵌真 Tomcat：`server-tomcat` 传递的桩与 `tomcat-embed-core` 同包名，
+- 测试内嵌真 Tomcat：`server-servlet` 传递的桩与 `tomcat-embed-core` 同包名，
   已在 `testRuntimeClasspath` 排除桩，示例本身仍靠桩生成 Tomcat 的 Valve/WebSocket 类型。
 
 ## 运行测试

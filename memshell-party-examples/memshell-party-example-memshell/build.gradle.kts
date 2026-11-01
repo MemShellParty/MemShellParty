@@ -19,8 +19,8 @@ dependencies {
     implementation(project(":memshell-party-core"))
     // 投递编码（Base64 / gzip / AgentJar / 带 Attacher 的 AgentJar）
     implementation(project(":memshell-party-packer"))
-    // server 插件：Tomcat 的注入器模板（Filter/Servlet/Valve/WebSocket 以及 Agent 类型）
-    implementation(project(":memshell-party-server:memshell-party-server-tomcat"))
+    // server 插件：内置 servlet 容器的注入器模板（Filter/Servlet/Valve/WebSocket 以及 Agent 类型）
+    implementation(project(":memshell-party-server:memshell-party-server-servlet"))
     // shelltool 插件：Godzilla 的 shell 模板与配置
     implementation(project(":memshell-party-shelltool:memshell-party-shelltool-godzilla"))
 

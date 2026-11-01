@@ -32,7 +32,7 @@ dependencies {
     // 内置 packer：GUI 的打包方式选择 + 演示自定义 packer 与内置项共存
     implementation(project(":memshell-party-packer"))
     // 内置 provider：演示自定义 server / shelltool 与内置项共存
-    implementation(project(":memshell-party-server:memshell-party-server-tomcat"))
+    implementation(project(":memshell-party-server:memshell-party-server-servlet"))
     implementation(project(":memshell-party-shelltool:memshell-party-shelltool-godzilla"))
 
     // 生成期依赖：自定义 shelltool 模板的父接口 javax.servlet.* 要能以字节方式解析（不会被加载进 JVM）。
@@ -44,8 +44,8 @@ dependencies {
 
     // 生成期验证：内置 shelltool 的工具映射与自定义 server 的注入器映射求交集
     testImplementation(project(":memshell-party-shelltool:memshell-party-shelltool-command"))
-    // 同一个自定义工具在别的 servlet 容器上同样可用（这里只做生成期验证）
-    testImplementation(project(":memshell-party-server:memshell-party-server-undertow"))
+    // 同一个自定义工具在别的 servlet 容器上同样可用（这里只做生成期验证），
+    // Undertow provider 已随 server-servlet 进入测试类路径
     // 端到端测试：内嵌 Tomcat 跑内存马 + 仓库内的哥斯拉协议客户端（tools:godzilla）
     testImplementation(libs.tomcat.embed.core)
     testImplementation(libs.javax.servlet.api)
@@ -58,7 +58,7 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-// 测试要内嵌真 Tomcat；server-tomcat 传递的桩与 tomcat-embed-core 同包名，留在测试运行时
+// 测试要内嵌真 Tomcat；server-servlet 传递的桩与 tomcat-embed-core 同包名，留在测试运行时
 // 会遮蔽真身（表现为 NoSuchMethodError: Adapter.getDomain() 一类）。只从测试运行时摘掉：
 // 示例本身（./gradlew run）仍靠桩生成 Tomcat 的 Valve/WebSocket 等类型。
 configurations.named("testRuntimeClasspath") {

@@ -16,14 +16,17 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 | --- | --- |
 | `memshell-party-core` | `MemShellGenerator`、`ProbeShellGenerator`、注册表、混淆；传递 `api`、`common` 与 ByteBuddy |
 | `memshell-party-api` | 配置、结果、SPI 与 packer 契约；只需契约类型时单独引入（packer 插件只依赖它） |
-| `memshell-party-server-<name>` | 目标容器的注入器；聚合模块 `memshell-party-server-all` |
+| `memshell-party-server-servlet` | 内置 servlet 容器的注入器；聚合模块 `memshell-party-server-all` |
+| `memshell-party-server-<name>` | 框架/协议 provider（Spring MVC/WebFlux、Struts2、XXL-Job、Dubbo） |
 | `memshell-party-shelltool-<name>` | 工具协议、配置与模板；聚合模块 `memshell-party-shelltool-all` |
 | `memshell-party-packer` | 内置打包方式，可选 |
 | `memshell-party-stub-<name>` | 生成期签名桩，由对应 server 模块按需传递 |
 | `memshell-party-gui-sdk` | Swing 生成器界面与 `GuiExtension`，可选 |
 
 生成内存马的最小依赖是 `core` + 目标 `server` + 目标 `shelltool`。server 与 shelltool 通过
-`ServiceLoader` 自动注册，生成器按名字查表。
+`ServiceLoader` 自动注册，生成器按名字查表。Servlet 容器（Tomcat、Jetty、Undertow、JBoss、
+Resin、WebLogic、WebSphere、GlassFish、TongWeb、BES、InforSuite、Apusic）统一由
+`memshell-party-server-servlet` 提供，不再按容器拆分模块。
 
 <Tabs items={["Maven", "Gradle"]}>
   <Tab>
@@ -35,7 +38,7 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
     </dependency>
     <dependency>
       <groupId>io.github.reajason</groupId>
-      <artifactId>memshell-party-server-tomcat</artifactId>
+      <artifactId>memshell-party-server-servlet</artifactId>
       <version>3.0.0</version>
     </dependency>
     <dependency>
@@ -55,7 +58,7 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
   <Tab>
     ```groovy
     implementation 'io.github.reajason:memshell-party-core:3.0.0'
-    implementation 'io.github.reajason:memshell-party-server-tomcat:3.0.0'
+    implementation 'io.github.reajason:memshell-party-server-servlet:3.0.0'
     implementation 'io.github.reajason:memshell-party-shelltool-godzilla:3.0.0'
 
     // 可选
@@ -228,7 +231,7 @@ System.out.println(result.getShellClassName());
 
 ```groovy
 implementation 'io.github.reajason:memshell-party-gui-sdk:3.0.0'
-implementation 'io.github.reajason:memshell-party-server-tomcat:3.0.0'
+implementation 'io.github.reajason:memshell-party-server-servlet:3.0.0'
 ```
 
 ```java
@@ -247,15 +250,16 @@ MemShellGui.createMemShellFrame().setVisible(true);
 
 | server 模块 | 签名桩 |
 | --- | --- |
-| `memshell-party-server-tomcat` | `memshell-party-stub-tomcat` |
-| `memshell-party-server-jetty` | `memshell-party-stub-jetty` |
+| `memshell-party-server-servlet` | `memshell-party-stub-tomcat`、`memshell-party-stub-jetty` |
 | `memshell-party-server-dubbo` | `memshell-party-stub-dubbo` |
 
-消费方同时引入真实容器（例如测试里的 `tomcat-embed-core`）时，要排除同包名的桩，否则真身会被桩遮蔽：
+消费方同时引入真实容器（例如测试里的 `tomcat-embed-core`、`jetty-server`）时，要排除同包名的桩，
+否则真身会被桩遮蔽：
 
 ```groovy
-testImplementation('io.github.reajason:memshell-party-server-tomcat:3.0.0') {
+testImplementation('io.github.reajason:memshell-party-server-servlet:3.0.0') {
     exclude group: 'io.github.reajason', module: 'memshell-party-stub-tomcat'
+    // 使用真实 Jetty 时还要排除 'memshell-party-stub-jetty'
 }
 ```
 
