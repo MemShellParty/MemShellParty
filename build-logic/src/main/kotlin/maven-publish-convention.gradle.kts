@@ -2,7 +2,8 @@ plugins {
     id("com.vanniktech.maven.publish")
 }
 
-val isSnapshot = (rootProject.version as String).endsWith("-SNAPSHOT")
+val moduleVersion = ModuleVersions.versionFor(project)
+val isSnapshot = moduleVersion.endsWith("-SNAPSHOT")
 
 mavenPublishing {
     publishToMavenCentral(automaticRelease = true, validateDeployment = true)
@@ -15,7 +16,7 @@ mavenPublishing {
     coordinates(
         "io.github.reajason",
         project.name,
-        rootProject.version as String
+        moduleVersion
     )
 
     pom {

@@ -16,9 +16,9 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 | --- | --- |
 | `memshell-party-core` | `MemShellGenerator`、`ProbeShellGenerator`、注册表、混淆；传递 `api`、`common` 与 ByteBuddy |
 | `memshell-party-api` | 配置、结果、SPI 与 packer 契约；只需契约类型时单独引入（packer 插件只依赖它） |
-| `memshell-party-server-servlet` | 内置 servlet 容器的注入器；聚合模块 `memshell-party-server-all` |
+| `memshell-party-server-servlet` | 内置 servlet 容器的注入器；聚合 BOM `memshell-party-server-all` |
 | `memshell-party-server-<name>` | 框架/协议 provider（Spring MVC/WebFlux、Struts2、XXL-Job、Dubbo） |
-| `memshell-party-shelltool-<name>` | 工具协议、配置与模板；聚合模块 `memshell-party-shelltool-all` |
+| `memshell-party-shelltool-<name>` | 工具协议、配置与模板；聚合 BOM `memshell-party-shelltool-all` |
 | `memshell-party-packer` | 内置打包方式，可选 |
 | `memshell-party-stub-<name>` | 生成期签名桩，由对应 server 模块按需传递 |
 | `memshell-party-gui-sdk` | Swing 生成器界面与 `GuiExtension`，可选 |
@@ -27,45 +27,81 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 `ServiceLoader` 自动注册，生成器按名字查表。Servlet 容器（Tomcat、Jetty、Undertow、JBoss、
 Resin、WebLogic、WebSphere、GlassFish、TongWeb、BES、InforSuite、Apusic）统一由
 `memshell-party-server-servlet` 提供，不再按容器拆分模块。
+`server-all` 和 `shelltool-all` 是聚合 BOM；Gradle 使用 `platform(...)` 引入，同时仍会带入全部对应 provider。
+
+通过 BOM 统一管理模块版本。api、common、core、gui-sdk 与聚合模块跟随 BOM 版本；packer、各 server、shelltool 和签名桩使用独立版本。
 
 <Tabs items={["Maven", "Gradle"]}>
   <Tab>
     ```xml
-    <dependency>
-      <groupId>io.github.reajason</groupId>
-      <artifactId>memshell-party-core</artifactId>
-      <version>3.0.0</version>
-    </dependency>
-    <dependency>
-      <groupId>io.github.reajason</groupId>
-      <artifactId>memshell-party-server-servlet</artifactId>
-      <version>3.0.0</version>
-    </dependency>
-    <dependency>
-      <groupId>io.github.reajason</groupId>
-      <artifactId>memshell-party-shelltool-godzilla</artifactId>
-      <version>3.0.0</version>
-    </dependency>
+    <dependencyManagement>
+      <dependencies>
+        <dependency>
+          <groupId>io.github.reajason</groupId>
+          <artifactId>memshell-party-bom</artifactId>
+          <version>3.0.0</version>
+          <type>pom</type>
+          <scope>import</scope>
+        </dependency>
+      </dependencies>
+    </dependencyManagement>
 
-    <!-- 可选：内置打包方式 -->
-    <dependency>
-      <groupId>io.github.reajason</groupId>
-      <artifactId>memshell-party-packer</artifactId>
-      <version>3.0.0</version>
-    </dependency>
+    <dependencies>
+      <dependency>
+        <groupId>io.github.reajason</groupId>
+        <artifactId>memshell-party-core</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>io.github.reajason</groupId>
+        <artifactId>memshell-party-server-servlet</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>io.github.reajason</groupId>
+        <artifactId>memshell-party-shelltool-godzilla</artifactId>
+      </dependency>
+
+      <!-- 可选：内置打包方式 -->
+      <dependency>
+        <groupId>io.github.reajason</groupId>
+        <artifactId>memshell-party-packer</artifactId>
+      </dependency>
+    </dependencies>
     ```
   </Tab>
   <Tab>
     ```groovy
-    implementation 'io.github.reajason:memshell-party-core:3.0.0'
-    implementation 'io.github.reajason:memshell-party-server-servlet:3.0.0'
-    implementation 'io.github.reajason:memshell-party-shelltool-godzilla:3.0.0'
+    implementation platform('io.github.reajason:memshell-party-bom:3.0.0')
+    implementation 'io.github.reajason:memshell-party-core'
+    implementation 'io.github.reajason:memshell-party-server-servlet'
+    implementation 'io.github.reajason:memshell-party-shelltool-godzilla'
 
     // 可选
-    implementation 'io.github.reajason:memshell-party-packer:3.0.0'
+    implementation 'io.github.reajason:memshell-party-packer'
     ```
   </Tab>
 </Tabs>
+
+Maven 需要引入全部 provider 时，将聚合 BOM 声明为普通 `pom` 类型依赖：
+
+```xml
+<dependencies>
+  <dependency>
+    <groupId>io.github.reajason</groupId>
+    <artifactId>memshell-party-server-all</artifactId>
+    <version>3.0.0</version>
+    <type>pom</type>
+  </dependency>
+  <dependency>
+    <groupId>io.github.reajason</groupId>
+    <artifactId>memshell-party-shelltool-all</artifactId>
+    <version>3.0.0</version>
+    <type>pom</type>
+  </dependency>
+</dependencies>
+```
+
+`type=pom` 会保留聚合 POM 中的传递依赖，从而引入全部 provider；不要加 `scope=import`，后者只导入版本约束。
+已通过 `memshell-party-bom` 管理版本时，可以省略这里的 `<version>`。
 
 运行期为 Java 8+；生成的类默认是 class 版本 50（Java 6），用 `ShellConfig.targetJreVersion` 调整。
 
@@ -269,7 +305,7 @@ server/shelltool 的传递依赖，避免把一个容器的 API 带进另一个�
 ### 3.0.0 迁移要点
 
 - 坐标：`io.github.reajason:generator` → `memshell-party-*`；`generator` 拆成 `api` 与 `core`。
-- server 与 shelltool 拆成独立模块；聚合用 `memshell-party-server-all` / `memshell-party-shelltool-all`。
+- server 与 shelltool 拆成独立模块；聚合 BOM 为 `memshell-party-server-all` / `memshell-party-shelltool-all`。
 - Packer 与 SPI 契约移入 `api`；内置打包方式改为 `ServiceLoader` 可选插件，缺失的可选依赖自动跳过。
 - Suo5 v1 移除，原 Suo5v2 更名为 `Suo5`。
 - 新增外置插件：实现 `ServerProvider` / `ShellToolProvider` / `Packer` 的 jar 放入 `plugins/`，

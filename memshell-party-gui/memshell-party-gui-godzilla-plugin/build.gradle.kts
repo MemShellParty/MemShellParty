@@ -27,12 +27,12 @@ dependencies {
     // 打进插件反而会和宿主已有的类重复（插件类加载器 parent-first，重复也不会生效）
     compileOnly(libs.godzilla.sdk)
     implementation(project(":memshell-party-gui:memshell-party-gui-sdk"))
-    runtimeOnly(project(":memshell-party-server:memshell-party-server-all"))
-    runtimeOnly(project(":memshell-party-shelltool:memshell-party-shelltool-all"))
+    runtimeOnly(platform(project(":memshell-party-server:memshell-party-server-all")))
+    runtimeOnly(platform(project(":memshell-party-shelltool:memshell-party-shelltool-all")))
 
     testImplementation(libs.godzilla.sdk)
-    testImplementation(project(":memshell-party-server:memshell-party-server-all"))
-    testImplementation(project(":memshell-party-shelltool:memshell-party-shelltool-all"))
+    testImplementation(platform(project(":memshell-party-server:memshell-party-server-all")))
+    testImplementation(platform(project(":memshell-party-shelltool:memshell-party-shelltool-all")))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }

@@ -26,8 +26,8 @@ dependencies {
     implementation(project(":memshell-party-gui:memshell-party-gui-sdk"))
     // 完整发行版带内置 packer；SDK 本身不再传递该依赖
     implementation(project(":memshell-party-packer"))
-    implementation(project(":memshell-party-server:memshell-party-server-all"))
-    implementation(project(":memshell-party-shelltool:memshell-party-shelltool-all"))
+    implementation(platform(project(":memshell-party-server:memshell-party-server-all")))
+    implementation(platform(project(":memshell-party-shelltool:memshell-party-shelltool-all")))
     implementation(libs.flatlaf)
     implementation(libs.flatlaf.extras)
     implementation(libs.miglayout.swing)

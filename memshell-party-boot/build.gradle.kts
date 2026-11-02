@@ -27,6 +27,9 @@ configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
     }
+    implementation {
+        exclude(group = "io.github.reajason", module = "memshell-party-stub-tomcat")
+    }
 }
 
 dependencies {
@@ -38,10 +41,8 @@ dependencies {
     // Pin the generator's Byte Buddy explicitly instead of relying on the Boot-managed version.
     implementation(libs.byte.buddy)
     implementation(project(":memshell-party-core"))
-    implementation(project(":memshell-party-server:memshell-party-server-all")) {
-        exclude(group = "io.github.reajason", module = "memshell-party-stub-tomcat")
-    }
-    implementation(project(":memshell-party-shelltool:memshell-party-shelltool-all"))
+    implementation(platform(project(":memshell-party-server:memshell-party-server-all")))
+    implementation(platform(project(":memshell-party-shelltool:memshell-party-shelltool-all")))
     implementation(project(":memshell-party-packer"))
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")

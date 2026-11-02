@@ -58,6 +58,15 @@
 ./gradlew :vul:vul-webapp-expression:war
 ```
 
+### Maven 模块版本
+
+- 统一版本：BOM、api、common、core、gui-sdk、server-all、shelltool-all，使用根项目的 `version`。
+- 独立版本：packer、各 server/shelltool/stub，在 `build-logic/src/main/kotlin/ModuleVersions.kt` 中维护 release 基线版本。
+
+准备 release 时，提升根版本；有变更的独立模块还要提升自身基线版本，并把 artifactId 加入
+`gradle.properties` 的 `publishIndependentModules`（逗号分隔）。未列出的独立模块不会重复发布。
+SNAPSHOT 与 Maven Local 始终发布全部模块，SNAPSHOT 版本号自动从各模块基线生成。
+
 ### SpringBoot + React 前端编译
 
 UI 采用的 React SPA + SpringBoot，构建时需要先将 React 前端项目编译之后移动到 SpringBoot 中的 static 和 templates 中。

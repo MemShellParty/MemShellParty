@@ -7,10 +7,10 @@ plugins {
     `java-library`
 }
 
-apply(plugin = "maven-publish-convention")
-
 group = "io.github.reajason"
-version = rootProject.version
+version = ModuleVersions.versionFor(project)
+
+apply(plugin = "maven-publish-convention")
 
 extensions.configure<JavaPluginExtension> {
     toolchain {

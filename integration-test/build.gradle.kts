@@ -26,8 +26,8 @@ dependencies {
     testImplementation(project(":tools:suo5"))
     testImplementation(project(":tools:ant-sword"))
     testImplementation(project(":memshell-party-core"))
-    testImplementation(project(":memshell-party-server:memshell-party-server-all"))
-    testImplementation(project(":memshell-party-shelltool:memshell-party-shelltool-all"))
+    testImplementation(platform(project(":memshell-party-server:memshell-party-server-all")))
+    testImplementation(platform(project(":memshell-party-shelltool:memshell-party-shelltool-all")))
     testImplementation(project(":memshell-party-packer"))
     // CVE-2016-4437（Shiro-550）验收要调 exploit 模块的 SDK（探测/爆破/装载器注入编排）
     testImplementation(project(":memshell-party-gui:memshell-party-gui-shiro-exploit"))

@@ -33,6 +33,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "memshell-party"
 
+include("memshell-party-bom")
 include("memshell-party-common")
 
 // Compile-time stubs (compileOnly only, never shipped at runtime)

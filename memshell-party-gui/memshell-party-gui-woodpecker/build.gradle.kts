@@ -33,12 +33,12 @@ dependencies {
     implementation(project(":memshell-party-packer"))
     // provider 走 SPI 发现（MemShellRegistry 里 ServiceLoader 按 TCCL 找），插件不直接编译引用，
     // 但生成时必须有：server 决定模板与注入器，shelltool 决定工具 config
-    runtimeOnly(project(":memshell-party-server:memshell-party-server-all"))
-    runtimeOnly(project(":memshell-party-shelltool:memshell-party-shelltool-all"))
+    runtimeOnly(platform(project(":memshell-party-server:memshell-party-server-all")))
+    runtimeOnly(platform(project(":memshell-party-shelltool:memshell-party-shelltool-all")))
 
     testImplementation(libs.woodpecker.sdk)
-    testImplementation(project(":memshell-party-server:memshell-party-server-all"))
-    testImplementation(project(":memshell-party-shelltool:memshell-party-shelltool-all"))
+    testImplementation(platform(project(":memshell-party-server:memshell-party-server-all")))
+    testImplementation(platform(project(":memshell-party-shelltool:memshell-party-shelltool-all")))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }

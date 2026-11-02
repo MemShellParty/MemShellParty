@@ -8,7 +8,7 @@ plugins {
 
 group = "io.github.reajason"
 description = "Extensible Swing desktop SDK of MemShellParty: extension points and generator UI, without server providers or built-in packers"
-version = rootProject.version
+version = ModuleVersions.versionFor(project)
 
 java {
     toolchain {
@@ -41,8 +41,8 @@ dependencies {
     implementation(libs.miglayout.swing)
     implementation(libs.cfr)
     testImplementation(project(":memshell-party-packer"))
-    testImplementation(project(":memshell-party-server:memshell-party-server-all"))
-    testImplementation(project(":memshell-party-shelltool:memshell-party-shelltool-all"))
+    testImplementation(platform(project(":memshell-party-server:memshell-party-server-all")))
+    testImplementation(platform(project(":memshell-party-shelltool:memshell-party-shelltool-all")))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 }

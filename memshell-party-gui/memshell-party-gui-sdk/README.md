@@ -25,7 +25,7 @@ CFR 反编译工具 `DecompileFrame` —— 加上扩展点。
 dependencies {
     // 两个生成器界面与扩展点
     implementation("io.github.reajason:memshell-party-gui-sdk:<version>")
-    // server 不随 SDK 走，用哪个引哪个（要全部就换成 memshell-party-server-all）
+    // server 不随 SDK 走，用哪个引哪个；全部使用 implementation(platform("io.github.reajason:memshell-party-server-all:<version>"))
     implementation("io.github.reajason:memshell-party-server-servlet:<version>")
 }
 ```
@@ -35,7 +35,7 @@ dependencies {
 其余依赖（packer、内置 shelltool、FlatLaf/MigLayout/CFR、生成期签名包）都是 runtime scope。
 
 > 一个 server 都不引时界面能打开，但工具下拉框是空的（列表 = server 的注入器映射 × 工具声明求交集）。
-> 需要其它内置工具时同理加 `memshell-party-shelltool-*`。
+> 需要其它内置工具时同理加 `memshell-party-shelltool-*`；全部使用 `implementation(platform("io.github.reajason:memshell-party-shelltool-all:<version>"))`。
 
 ## 拿到界面
 
