@@ -25,3 +25,27 @@ dependencies {
         }
     }
 }
+
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        pom.withXml {
+            // Maven 的 dependencyManagement 按 type 匹配；聚合平台必须声明为 pom，
+            // 否则消费方以 type=pom 引入时无法从本 BOM 继承版本。
+            val aggregateModuleIds = setOf(
+                "memshell-party-server-all",
+                "memshell-party-shelltool-all",
+            )
+            val document = asElement().ownerDocument
+            val dependencies = asElement().getElementsByTagName("dependency")
+            for (index in 0 until dependencies.length) {
+                val dependency = dependencies.item(index) as org.w3c.dom.Element
+                val artifactId = dependency.getElementsByTagName("artifactId").item(0).textContent
+                if (artifactId in aggregateModuleIds) {
+                    dependency.appendChild(document.createElement("type").apply {
+                        textContent = "pom"
+                    })
+                }
+            }
+        }
+    }
+}
