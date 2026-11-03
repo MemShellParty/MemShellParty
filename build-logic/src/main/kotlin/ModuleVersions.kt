@@ -3,7 +3,7 @@ import org.gradle.api.Project
 /** Versions of published modules that do not follow the root release version. */
 object ModuleVersions {
     // 只有 BOM 跟随根版本，其余发布模块都在这里维护独立 release 基线。
-    // 根版本为 SNAPSHOT 时自动追加 -SNAPSHOT。
+    // 根版本为 SNAPSHOT 时，只有 publishIndependentModules 选中的模块追加 -SNAPSHOT。
     val independentBaseVersions: Map<String, String> = linkedMapOf(
         ":memshell-party-common" to "3.0.0",
         ":memshell-party-api" to "3.0.0",
@@ -30,12 +30,34 @@ object ModuleVersions {
         ":memshell-party-stub:memshell-party-stub-tomcat" to "3.0.0",
     )
 
-    fun versionFor(project: Project): String =
-        versionFor(project.path, project.rootProject.version.toString())
+    fun selectedIndependentModules(project: Project): Set<String> {
+        val selected = project.providers.gradleProperty("publishIndependentModules")
+            .map { value -> value.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet() }
+            .getOrElse(emptySet())
+        val independentNames = independentBaseVersions.keys.mapTo(mutableSetOf(), ::artifactId)
+        require(selected.all { it in independentNames }) {
+            "publishIndependentModules contains unknown or non-independent modules: " +
+                (selected - independentNames).joinToString()
+        }
+        return selected
+    }
 
-    fun versionFor(projectPath: String, releaseVersion: String): String {
+    fun versionFor(project: Project): String =
+        versionFor(
+            project.path,
+            project.rootProject.version.toString(),
+            selectedIndependentModules(project),
+        )
+
+    fun versionFor(
+        projectPath: String,
+        releaseVersion: String,
+        selectedIndependentModules: Set<String>,
+    ): String {
         val baseVersion = independentBaseVersions[projectPath] ?: return releaseVersion
-        return if (releaseVersion.endsWith("-SNAPSHOT")) "$baseVersion-SNAPSHOT" else baseVersion
+        val isSelectedSnapshot = releaseVersion.endsWith("-SNAPSHOT") &&
+            artifactId(projectPath) in selectedIndependentModules
+        return if (isSelectedSnapshot) "$baseVersion-SNAPSHOT" else baseVersion
     }
 
     fun artifactId(projectPath: String): String = projectPath.substringAfterLast(':')
