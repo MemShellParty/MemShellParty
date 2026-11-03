@@ -11,7 +11,7 @@ require(selectedIndependentModules.all { it in independentModuleNames }) {
 tasks.register("publishAllToMavenCentral") {
     group = "publishing"
     description = "Publishes unified modules and independent modules selected by publishIndependentModules"
-    // Release 只发布统一版本模块、聚合模块和显式选择的独立模块；快照可覆盖写，始终全量发布。
+    // Release 只发布跟随根版本的模块和显式选择的独立模块；快照可覆盖写，始终全量发布。
     // The loop runs when this task is configured (task graph time) because the vanniktech
     // plugin registers publishToMavenCentral only during the subproject's afterEvaluate.
     subprojects.forEach { sub ->

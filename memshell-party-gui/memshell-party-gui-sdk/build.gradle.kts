@@ -26,9 +26,9 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.processResources {
-    // 把项目版本写入 classpath 资源，窗口标题运行时从 AppVersion 读取。
+    // GUI 发行物显示根发行版版本，与 gui-sdk 自身的 Maven 模块版本解耦。
     // 版本在配置期捕获：任务动作里访问 project 会破坏配置缓存。
-    val appVersion = project.version.toString()
+    val appVersion = rootProject.version.toString()
     inputs.property("appVersion", appVersion)
     filesMatching("version.properties") {
         expand("appVersion" to appVersion)

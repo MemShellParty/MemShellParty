@@ -7,20 +7,9 @@ description = "Bill of Materials for MemShellParty modules"
 version = ModuleVersions.versionFor(project)
 
 val releaseVersion = rootProject.version.toString()
-val releaseModules = listOf(
-    "memshell-party-common",
-    "memshell-party-api",
-    "memshell-party-core",
-    "memshell-party-gui-sdk",
-    "memshell-party-server-all",
-    "memshell-party-shelltool-all",
-)
 
 dependencies {
     constraints {
-        releaseModules.forEach { artifactId ->
-            api("io.github.reajason:$artifactId:$releaseVersion")
-        }
         ModuleVersions.independentBaseVersions.forEach { (projectPath, _) ->
             val artifactId = ModuleVersions.artifactId(projectPath)
             val moduleVersion = ModuleVersions.versionFor(projectPath, releaseVersion)
