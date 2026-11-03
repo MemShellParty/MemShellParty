@@ -218,13 +218,9 @@ public abstract class AbstractContainerTest {
                     config.getImageName() + " has no JSR-356 WebSocket support");
         }
         String url = getUrl();
-        if (StringUtils.isNotBlank(config.getServerVersion())) {
-            ShellAssertion.shellInjectIsOk(url, config.getServer(), config.getServerVersion(), shellType, shellTool,
-                    config.getTargetJdkVersion(), packer, getContainer(), getPythonContainer());
-        } else {
-            ShellAssertion.shellInjectIsOk(url, config.getServer(), shellType, shellTool,
-                    config.getTargetJdkVersion(), packer, getContainer(), getPythonContainer());
-        }
+        String serverVersion = StringUtils.isNotBlank(config.getServerVersion()) ? config.getServerVersion() : null;
+        ShellAssertion.shellInjectIsOk(url, config.getServer(), serverVersion, shellType, shellTool,
+                config.getTargetJdkVersion(), packer, getContainer(), getPythonContainer(), config.getProxyTarget());
     }
 
     protected void runProbeInject(ContainerTestConfig config, String shellType) {

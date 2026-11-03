@@ -26,6 +26,7 @@ public class WebLogic15110ContainerTest extends AbstractContainerTest {
             .targetJdkVersion(Opcodes.V21)
             .warFile(ContainerTool.warJakartaFile)
             .jakarta(true)
+            .proxyTarget("python:8000")
             .agentPersist(true)
             .filelessAgent(true)
             .supportedShellTypes(List.of(
@@ -47,7 +48,9 @@ public class WebLogic15110ContainerTest extends AbstractContainerTest {
 
     static Network network = newNetwork();
     @Container
-    public static final GenericContainer<?> python = buildPythonContainer(network);
+    public static final GenericContainer<?> python = buildPythonContainer(network)
+            .withNetworkAliases("python")
+            .withCommand("python", "-m", "http.server", "8000", "--bind", "0.0.0.0");
 
     @Container
     public static final GenericContainer<?> container = buildContainer(CONFIG, network);

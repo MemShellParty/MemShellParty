@@ -126,7 +126,7 @@ public class ShellAssertion {
     }
 
     @SneakyThrows
-    private static MemShellResult shellInjectIsOk(String url, String server, String serverVersion, String shellType, String shellTool,
+    public static MemShellResult shellInjectIsOk(String url, String server, String serverVersion, String shellType, String shellTool,
                                                   int targetJdkVersion, String packer,
                                                   GenericContainer<?> appContainer, GenericContainer<?> pythonContainer,
                                                   String proxyTarget) {
@@ -334,6 +334,13 @@ public class ShellAssertion {
             String connect = "CONNECT " + targetHost + ":" + targetPort + " HTTP/1.1\r\n\r\n";
             assertTrue(proxyPush(client, shellUrl, token, config, connect.getBytes(StandardCharsets.ISO_8859_1)) == 200,
                     "Proxy CONNECT push failed");
+
+            // Queue both writes before opening the streaming pull. Some servers have only one
+            // available servlet worker; an early pull can otherwise starve the next push.
+            String request = "GET / HTTP/1.1\r\nHost: " + targetHost + "\r\nConnection: close\r\n\r\n";
+            assertTrue(proxyPush(client, shellUrl, token, config, request.getBytes(StandardCharsets.ISO_8859_1)) == 200,
+                    "Proxy payload push failed");
+
             pull = client.newCall(proxyRequest(config, shellUrl, token).get().build()).execute();
             assertTrue(pull.code() == 200, "Proxy pull failed: " + pull.code());
             BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -343,9 +350,6 @@ public class ShellAssertion {
                             StandardCharsets.ISO_8859_1).startsWith("HTTP/1.1 200"),
                     "Proxy CONNECT was not established");
 
-            String request = "GET / HTTP/1.1\r\nHost: " + targetHost + "\r\nConnection: close\r\n\r\n";
-            assertTrue(proxyPush(client, shellUrl, token, config, request.getBytes(StandardCharsets.ISO_8859_1)) == 200,
-                    "Proxy payload push failed");
             ByteArrayOutputStream targetResponse = new ByteArrayOutputStream();
             String line;
             while ((line = reader.readLine()) != null) {

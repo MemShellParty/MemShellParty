@@ -80,8 +80,7 @@ public final class AgentPersistenceAssertion {
         boolean restored = false;
         try {
             int logOffset = container.getLogs().length();
-            String pid = container.execInContainer("bash", "/fetch_pid.sh").getStdout().trim();
-            Container.ExecResult attach = attachAgent(container, pid, containerAgentJar, "persist=true");
+            Container.ExecResult attach = attachAgent(container, containerAgentJar, "persist=true");
             log.info("persist attach stdout: {}\nstderr: {}", attach.getStdout(), attach.getStderr());
             assertEquals(0, attach.getExitCode(), attach.getStderr());
             assertTrue(attach.getStdout().contains("ATTACH_ACK")
@@ -134,9 +133,8 @@ public final class AgentPersistenceAssertion {
 
     private static void restorePersistedJar(GenericContainer<?> container, String containerAgentJar,
                                             PersistencePaths paths) throws Exception {
-        String pid = container.execInContainer("bash", "/fetch_pid.sh").getStdout().trim();
         int logOffset = container.getLogs().length();
-        Container.ExecResult restore = attachAgent(container, pid, containerAgentJar, "restore=true");
+        Container.ExecResult restore = attachAgent(container, containerAgentJar, "restore=true");
         log.info("restore attach stdout: {}\nstderr: {}", restore.getStdout(), restore.getStderr());
         assertEquals(0, restore.getExitCode(), restore.getStderr());
         assertTrue(restore.getStdout().contains("ATTACH_ACK")
@@ -145,8 +143,26 @@ public final class AgentPersistenceAssertion {
         assertEquals(paths.originalJar, awaitRestoredJar(container, logOffset));
     }
 
-    private static Container.ExecResult attachAgent(GenericContainer<?> container, String pid,
+    private static Container.ExecResult attachAgent(GenericContainer<?> container,
                                                      String containerAgentJar, String args) throws Exception {
+        Container.ExecResult attach = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            String pid = container.execInContainer("bash", "/fetch_pid.sh").getStdout().trim();
+            attach = attachAgentOnce(container, pid, containerAgentJar, args);
+            String stderr = attach.getStderr();
+            boolean missingProcess = stderr.contains("Process ") && stderr.contains(" not found");
+            if (attach.getExitCode() == 0 || !missingProcess) {
+                return attach;
+            }
+            if (attempt < 2) {
+                Thread.sleep(200);
+            }
+        }
+        return attach;
+    }
+
+    private static Container.ExecResult attachAgentOnce(GenericContainer<?> container, String pid,
+                                                         String containerAgentJar, String args) throws Exception {
         Container.ExecResult attach = container.execInContainer(
                 "/jattach", pid, "load", "instrument", "false", containerAgentJar + "=" + args);
         if (attach.getExitCode() != 0

@@ -63,6 +63,7 @@ public class ContainerTestConfig {
     private final boolean privilegedMode = false;
     @Builder.Default
     private final String networkAlias = "app";
+    private final String proxyTarget;
     private final Map<String, String> env;
     @Builder.Default
     private final boolean jakarta = false;
