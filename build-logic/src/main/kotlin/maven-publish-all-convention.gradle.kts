@@ -1,24 +1,15 @@
-val independentModuleNames = ModuleVersions.independentBaseVersions.keys
-    .mapTo(mutableSetOf()) { ModuleVersions.artifactId(it) }
-val selectedIndependentModules = providers.gradleProperty("publishIndependentModules")
-    .map { value -> value.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet() }
-    .getOrElse(emptySet())
-require(selectedIndependentModules.all { it in independentModuleNames }) {
-    "publishIndependentModules contains unknown or non-independent modules: " +
-        (selectedIndependentModules - independentModuleNames).joinToString()
-}
+val selectedIndependentModules = ModuleVersions.selectedIndependentModules(project)
 
 tasks.register("publishAllToMavenCentral") {
     group = "publishing"
-    description = "Publishes unified modules and independent modules selected by publishIndependentModules"
-    // Release 只发布跟随根版本的模块和显式选择的独立模块；快照可覆盖写，始终全量发布。
+    description = "Publishes root-versioned modules and independent modules selected by publishIndependentModules"
+    // Release 与 SNAPSHOT 使用相同发布集合：跟随根版本的模块和显式选择的独立模块。
     // The loop runs when this task is configured (task graph time) because the vanniktech
     // plugin registers publishToMavenCentral only during the subproject's afterEvaluate.
     subprojects.forEach { sub ->
         sub.plugins.withId("com.vanniktech.maven.publish") {
             val isIndependent = sub.path in ModuleVersions.independentBaseVersions
-            val isSnapshot = rootProject.version.toString().endsWith("-SNAPSHOT")
-            if (!isIndependent || isSnapshot || sub.name in selectedIndependentModules) {
+            if (!isIndependent || sub.name in selectedIndependentModules) {
                 dependsOn(sub.tasks.named("publishToMavenCentral"))
             }
         }

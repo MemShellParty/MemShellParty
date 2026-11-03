@@ -65,7 +65,7 @@
 
 准备 release 时，提升根版本；有变更的独立模块还要提升自身基线版本，并把 artifactId 加入
 `gradle.properties` 的 `publishIndependentModules`（逗号分隔）。未列出的独立模块不会重复发布。
-SNAPSHOT 与 Maven Local 始终发布全部模块，SNAPSHOT 版本号自动从各模块基线生成。
+SNAPSHOT 与 release 使用相同发布集合；只有选中的独立模块在自身基线后追加 `-SNAPSHOT`，未选中的模块保持 release 基线。Maven Local 始终发布全部模块。
 
 ### SpringBoot + React 前端编译
 

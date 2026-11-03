@@ -7,12 +7,13 @@ description = "Bill of Materials for MemShellParty modules"
 version = ModuleVersions.versionFor(project)
 
 val releaseVersion = rootProject.version.toString()
+val selectedIndependentModules = ModuleVersions.selectedIndependentModules(project)
 
 dependencies {
     constraints {
         ModuleVersions.independentBaseVersions.forEach { (projectPath, _) ->
             val artifactId = ModuleVersions.artifactId(projectPath)
-            val moduleVersion = ModuleVersions.versionFor(projectPath, releaseVersion)
+            val moduleVersion = ModuleVersions.versionFor(projectPath, releaseVersion, selectedIndependentModules)
             if (artifactId.startsWith("memshell-party-stub-")) {
                 // 防止 server 的传递依赖把未变化的桩升级到本次发行版版本。
                 api("io.github.reajason:$artifactId") {
