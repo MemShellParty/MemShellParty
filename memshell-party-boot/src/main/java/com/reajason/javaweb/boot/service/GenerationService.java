@@ -40,7 +40,7 @@ public class GenerationService {
         if (shellConfig == null) {
             throw new InvalidInputException("shellConfig is required");
         }
-        Map<String, String> shellToolParams = request.getShellToolConfig();
+        Map<String, Object> shellToolParams = request.getShellToolConfig();
         InjectorConfig injectorConfig = request.getInjectorConfig();
         PackerConstraints constraints = PackerConstraints.forPacker(request.getPacker());
         constraints.constrainObfuscation(shellConfig.getObfuscation());

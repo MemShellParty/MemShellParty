@@ -30,7 +30,12 @@ import {
   useYupValidationResolver,
 } from "@/types/schema";
 import { fetchJson } from "@/utils/fetch-json";
-import { restoreMemShellFormValues, transformToPostData } from "@/utils/transformer";
+import {
+  missingRequiredRemoteFields,
+  restoreMemShellFormValues,
+  sanitizeMemShellHistoryValues,
+  transformToPostData,
+} from "@/utils/transformer";
 
 import { baseOptions } from "../lib/layout.shared";
 
@@ -171,6 +176,15 @@ export default function MemShellPage() {
         return;
       }
       try {
+        const missingRemoteFields = missingRequiredRemoteFields(data, shellToolConfigs);
+        if (missingRemoteFields.length > 0) {
+          toast.error(
+            t("memshell:tips.remoteOptionsRequired", {
+              fields: missingRemoteFields.join(", "),
+            }),
+          );
+          return;
+        }
         const postData = transformToPostData(data, shellToolConfigs);
         const response = await fetch(`${env.API_URL}/api/memshell/generate`, {
           method: "POST",
@@ -193,7 +207,7 @@ export default function MemShellPage() {
           kind: "memshell",
           createdAt: Date.now(),
           used: false,
-          formValues: data,
+          formValues: sanitizeMemShellHistoryValues(data, shellToolConfigs),
           result: result.memShellResult,
           packResult: result.packResult,
           packMethod: data.packingMethod,

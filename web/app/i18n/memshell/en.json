@@ -71,6 +71,11 @@
   "tips.download-jar": "Download the jar file and upload it to the public network server, so that it can be accessed through the http link to download",
   "tips.load-jar-with-scriptenginemanager": "Load the jar file with javax.script.ScriptEngineManager to implement injection",
   "tips.trigger-injector-class-loading": "Trigger the injector class loading with RCE vulnerability",
+  "remoteOptions.missingSource": "The remote options URL is missing. Relaunch from the external platform.",
+  "remoteOptions.loadFailed": "Failed to load remote options.",
+  "remoteOptions.empty": "No remote options are available.",
+  "remoteOptions.unsupportedField": "This object field is not supported by the web UI.",
+  "tips.remoteOptionsRequired": "Select required remote options: {{fields}}",
   "copySource": "Copy Source",
   "copyBase64": "Copy Base64"
 }

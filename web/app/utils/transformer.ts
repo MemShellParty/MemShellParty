@@ -44,6 +44,52 @@ export function restoreMemShellFormValues(formValue: MemShellFormSchema): MemShe
   };
 }
 
+function currentShellToolParams(
+  formValue: MemShellFormSchema,
+  shellToolConfigs?: Array<ShellToolConfigEntry>,
+) {
+  return shellToolConfigs?.find((config) => config.tool === formValue.shellTool)?.params;
+}
+
+function isObjectValue(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function missingRequiredRemoteFields(
+  formValue: MemShellFormSchema,
+  shellToolConfigs?: Array<ShellToolConfigEntry>,
+): string[] {
+  const values = formValue as Record<string, unknown>;
+  return (currentShellToolParams(formValue, shellToolConfigs) ?? [])
+    .filter((param) => param.ui?.kind === "remote-select" && param.ui.required)
+    .filter((param) => {
+      const value = values[param.name];
+      return value === undefined || value === null || (typeof value === "string" && !value.trim());
+    })
+    .map((param) => param.name);
+}
+
+/** Remote values are generation-time inputs, not reusable per-user history state. */
+export function sanitizeMemShellHistoryValues(
+  formValue: MemShellFormSchema,
+  shellToolConfigs?: Array<ShellToolConfigEntry>,
+): MemShellFormSchema {
+  const ordinaryCurrentNames = new Set(
+    (currentShellToolParams(formValue, shellToolConfigs) ?? [])
+      .filter((param) => param.ui?.kind !== "remote-select")
+      .map((param) => param.name),
+  );
+  const remoteNames = (shellToolConfigs ?? []).flatMap((config) =>
+    config.params.filter((param) => param.ui?.kind === "remote-select").map((param) => param.name),
+  );
+  if (remoteNames.length === 0) return formValue;
+  const sanitized = { ...formValue } as Record<string, unknown>;
+  for (const name of remoteNames) {
+    if (!ordinaryCurrentNames.has(name)) delete sanitized[name];
+  }
+  return sanitized as MemShellFormSchema;
+}
+
 export function transformToPostData(
   formValue: MemShellFormSchema,
   shellToolConfigs?: Array<ShellToolConfigEntry>,
@@ -74,13 +120,17 @@ export function transformToPostData(
   const shellToolConfig: ShellToolConfig = {
     shellClassName: formValue.shellClassName,
   };
-  const shellToolParams = shellToolConfigs?.find(
-    (config) => config.tool === formValue.shellTool,
-  )?.params;
+  const shellToolParams = currentShellToolParams(formValue, shellToolConfigs);
   for (const param of shellToolParams ?? []) {
-    const value = formValue[param.name as keyof MemShellFormSchema];
-    if (typeof value === "string" && value !== "") {
-      shellToolConfig[param.name as keyof ShellToolConfig] = value;
+    const value = formValue[param.name as keyof MemShellFormSchema] as unknown;
+    if (param.type === "object") {
+      if (value === undefined || value === null) continue;
+      if (!isObjectValue(value)) {
+        throw new TypeError(`Shell tool object parameter must be a JSON object: ${param.name}`);
+      }
+      shellToolConfig[param.name] = value;
+    } else if (typeof value === "string" && value !== "") {
+      shellToolConfig[param.name] = value;
     }
   }
 

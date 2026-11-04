@@ -1,4 +1,4 @@
-import type { ShellToolConfigParam } from "@/types/memshell";
+import type { ShellToolConfigParam, ShellToolConfigValue } from "@/types/memshell";
 import type { MemShellFormSchema } from "@/types/schema";
 
 import { ChevronDown, ChevronRight, InfoIcon, Shuffle } from "lucide-react";
@@ -22,6 +22,9 @@ import { SwitchFieldsPanel } from "@/components/ui/switch-fields-panel";
 import { TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { isToolParamVisible } from "@/lib/tool-param-visibility";
+
+import { RemoteSelect } from "../fields/remote-select";
+import { displayedShellToolParams, isRandomizableParam, isRemoteParam } from "./shelltool-params";
 
 /**
  * 工具参数的中文/英文标签，与结果区（results/basic-info.tsx）用词一致；没登记的参数直接显示参数名，
@@ -62,11 +65,12 @@ export function ShellToolTabContent({
   );
   const basicParams = visibleParams.filter((param) => param.group !== "ADVANCED");
   const advancedParams = visibleParams.filter((param) => param.group === "ADVANCED");
+  const randomizableBasicParams = basicParams.filter(isRandomizableParam);
 
   // 随机工具参数：与随机类名一致，参数全空（或仍是表单默认值）时默认开启，
   // 由后端为密码/密钥/请求头等基础参数生成随机默认值；关闭后才展示具体参数与高级配置。
   const [randomParams, setRandomParams] = useState(() =>
-    basicParams.every((param) => {
+    randomizableBasicParams.every((param) => {
       const name = param.name as keyof MemShellFormSchema;
       const current = String(form.getValues(name) ?? "").trim();
       const initial = String(form.formState.defaultValues?.[name] ?? "").trim();
@@ -74,24 +78,26 @@ export function ShellToolTabContent({
     }),
   );
   const savedParamsRef = useRef<Record<string, string>>({});
-  // 没有基础参数时不展示随机开关，高级参数仍需保持可见。
-  const showParams = !randomParams || basicParams.length === 0;
+  const randomizesVisibleFields = randomParams && randomizableBasicParams.length > 0;
+  const displayedBasicParams = displayedShellToolParams(basicParams, randomizesVisibleFields);
+  const displayedAdvancedParams = displayedShellToolParams(advancedParams, randomizesVisibleFields);
+  // 没有可随机化的基础参数时不展示随机开关，高级参数仍需保持可见。
 
   const handleRandomParamsChange = (checked: boolean) => {
     setRandomParams(checked);
     if (checked) {
       savedParamsRef.current = Object.fromEntries(
-        basicParams.map((param) => [
+        randomizableBasicParams.map((param) => [
           param.name,
           String(form.getValues(param.name as keyof MemShellFormSchema) ?? ""),
         ]),
       );
-      for (const param of basicParams) {
+      for (const param of randomizableBasicParams) {
         form.setValue(param.name as keyof MemShellFormSchema, "");
       }
       return;
     }
-    for (const param of basicParams) {
+    for (const param of randomizableBasicParams) {
       const value = savedParamsRef.current[param.name];
       if (value !== undefined) {
         form.setValue(param.name as keyof MemShellFormSchema, value);
@@ -126,7 +132,14 @@ export function ShellToolTabContent({
                 )}
               </span>
             </FieldLabel>
-            {isEnum ? (
+            {isRemoteParam(param) ? (
+              <RemoteSelect
+                hint={param.ui}
+                objectMode={param.type === "object"}
+                onChange={field.onChange}
+                value={field.value as ShellToolConfigValue | undefined}
+              />
+            ) : isEnum ? (
               <Select
                 items={param.options.map((option) => ({ value: option, label: option }))}
                 onValueChange={field.onChange}
@@ -143,7 +156,7 @@ export function ShellToolTabContent({
                   ))}
                 </SelectContent>
               </Select>
-            ) : (
+            ) : param.type === "string" ? (
               <Input
                 {...field}
                 value={(field.value as string) ?? ""}
@@ -151,6 +164,10 @@ export function ShellToolTabContent({
                   defaultValue: t("common:placeholders.input"),
                 })}
               />
+            ) : (
+              <p className="text-xs text-destructive">
+                {t("memshell:remoteOptions.unsupportedField")}
+              </p>
             )}
           </Field>
         )}
@@ -161,7 +178,7 @@ export function ShellToolTabContent({
   return (
     <TabsContent value={tool}>
       <div className="space-y-2">
-        {basicParams.length > 0 && (
+        {randomizableBasicParams.length > 0 && (
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Shuffle className="h-4 w-4" />
@@ -176,14 +193,14 @@ export function ShellToolTabContent({
             />
           </div>
         )}
-        {showParams && (basicParams.length > 0 || advancedParams.length > 0) && (
+        {(displayedBasicParams.length > 0 || displayedAdvancedParams.length > 0) && (
           <SwitchFieldsPanel className="space-y-2">
-            {basicParams.length > 0 && (
+            {displayedBasicParams.length > 0 && (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {basicParams.map(renderField)}
+                {displayedBasicParams.map(renderField)}
               </div>
             )}
-            {advancedParams.length > 0 && (
+            {displayedAdvancedParams.length > 0 && (
               <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
                 <CollapsibleTrigger className="flex w-full items-center gap-2 py-2 text-sm font-medium hover:underline">
                   {isAdvancedOpen ? (
@@ -195,7 +212,7 @@ export function ShellToolTabContent({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-2">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {advancedParams.map(renderField)}
+                    {displayedAdvancedParams.map(renderField)}
                   </div>
                 </CollapsibleContent>
               </Collapsible>

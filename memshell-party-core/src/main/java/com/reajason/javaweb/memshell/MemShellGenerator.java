@@ -61,7 +61,7 @@ public class MemShellGenerator {
     }
 
     public MemShellResult generate(ShellConfig shellConfig, InjectorConfig injectorConfig,
-                                   Map<String, String> shellToolParams) {
+                                   Map<String, ?> shellToolParams) {
         return generate(shellConfig, injectorConfig,
                 ToolConfigFactory.fromParams(shellConfig.getShellTool(), shellToolParams));
     }

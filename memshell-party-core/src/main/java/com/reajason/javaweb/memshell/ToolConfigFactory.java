@@ -1,8 +1,10 @@
 package com.reajason.javaweb.memshell;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.reajason.javaweb.GenerationException;
 import com.reajason.javaweb.InvalidInputException;
 import com.reajason.javaweb.memshell.config.ConfigField;
+import com.reajason.javaweb.memshell.config.RemoteOptions;
 import com.reajason.javaweb.memshell.config.ShellToolConfig;
 import com.reajason.javaweb.memshell.spi.ShellToolProvider;
 import com.reajason.javaweb.utils.StringUtils;
@@ -12,6 +14,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +22,7 @@ import java.util.Set;
 
 /**
  * 工具配置的统一出入口：按 {@link ConfigField} 注解读出每个 shell tool 的可配置参数，
- * 并把原始字符串参数绑定回工具 config，使调用方（REST、MCP、桌面端）不必依赖具体工具模块，
+ * 并把原始参数绑定回工具 config，使调用方（REST、MCP、桌面端）不必依赖具体工具模块，
  * SPI 新增的工具也不用改任何一行代码。
  * <p>
  * 参数名就是 config 的字段名（{@code pass} / {@code key} / {@code paramName}），不做工具名前缀；
@@ -42,13 +45,14 @@ public final class ToolConfigFactory {
     }
 
     /**
-     * Build the tool config for {@code toolName} from raw string parameters.
+     * Build the tool config for {@code toolName} from raw parameters. String and enum values
+     * retain their trim/blank semantics; map values are bound as defensive copies.
      * Package-private: callers outside core use {@link MemShellGenerator#generate},
      * which forwards to this binder.
      *
      * @throws GenerationException when the tool is not registered, or a parameter is unknown / unbindable
      */
-    static ShellToolConfig fromParams(String toolName, Map<String, String> params) {
+    static ShellToolConfig fromParams(String toolName, Map<String, ?> params) {
         ShellToolProvider provider = MemShellRegistry.getInstance().getToolProvider(toolName);
         if (provider == null) {
             throw new InvalidInputException("Unsupported shell tool: " + toolName);
@@ -59,17 +63,25 @@ public final class ToolConfigFactory {
             return config;
         }
         Set<String> supported = supportedParams(configClass);
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            if (StringUtils.isBlank(entry.getValue())) {
-                // 留空 = 用默认值
+        for (Map.Entry<String, ?> entry : params.entrySet()) {
+            Object value = entry.getValue();
+            if (value == null) {
+                // null = 用默认值
                 continue;
             }
             String name = entry.getKey();
+            if (value instanceof String && StringUtils.isBlank((String) value)) {
+                Field field = supported.contains(name) ? findField(configClass, name) : null;
+                if (field == null || !Map.class.isAssignableFrom(field.getType())) {
+                    // String / enum 留空 = 用默认值；未知字段的留空值也维持原来的忽略行为
+                    continue;
+                }
+            }
             if (!supported.contains(name)) {
                 throw new InvalidInputException("Unsupported param for tool " + toolName + ": " + name
                         + ", supported params: " + String.join(", ", supported));
             }
-            setField(configClass, config, name, entry.getValue().trim());
+            setField(configClass, config, name, value);
         }
         return config;
     }
@@ -89,7 +101,8 @@ public final class ToolConfigFactory {
     /**
      * Introspect one tool's configurable parameters from its config class: fields marked with
      * {@link ConfigField}, in declaration order (subclass first), excluded the generation
-     * config's own fields. String fields are text inputs, enum fields get their constant names as options.
+     * config's own fields. String fields are text inputs, enum fields get their constant names as options,
+     * and Map fields are objects. {@link RemoteOptions} adds remote-select UI metadata to String and Map fields.
      */
     public static List<ConfigParam> describeParams(String toolName) {
         ShellToolProvider provider = MemShellRegistry.getInstance().getToolProvider(toolName);
@@ -141,17 +154,44 @@ public final class ToolConfigFactory {
 
     private static ConfigParam toParam(Field field, ConfigField annotation) {
         Class<?> type = field.getType();
+        RemoteSelectUi ui = remoteSelectUi(field);
         if (type == String.class) {
             return new ConfigParam(field.getName(), "string", new ArrayList<String>(), annotation.group(),
-                    annotation.label(), annotation.placeholder());
+                    annotation.label(), annotation.placeholder(), ui);
         }
         if (type.isEnum()) {
             return new ConfigParam(field.getName(), "enum", enumNames(type), annotation.group(),
-                    annotation.label(), annotation.placeholder());
+                    annotation.label(), annotation.placeholder(), ui);
+        }
+        if (Map.class.isAssignableFrom(type)) {
+            return new ConfigParam(field.getName(), "object", new ArrayList<String>(), annotation.group(),
+                    annotation.label(), annotation.placeholder(), ui);
         }
         // 静默跳过会让字段从表单里凭空消失，不如在目录接口/测试里直接炸出来
         throw new GenerationException("Unsupported @ConfigField type: " + field.getDeclaringClass().getName()
-                + "." + field.getName() + " (" + type.getSimpleName() + "), only String and enum are supported");
+                + "." + field.getName() + " (" + type.getSimpleName()
+                + "), only String, enum and Map are supported");
+    }
+
+    private static RemoteSelectUi remoteSelectUi(Field field) {
+        RemoteOptions annotation = field.getAnnotation(RemoteOptions.class);
+        if (annotation == null) {
+            return null;
+        }
+        Class<?> type = field.getType();
+        if (type != String.class && !Map.class.isAssignableFrom(type)) {
+            throw new GenerationException("@RemoteOptions requires a String or Map field: "
+                    + field.getDeclaringClass().getName() + "." + field.getName());
+        }
+        if (StringUtils.isBlank(annotation.urlQueryParam()) || StringUtils.isBlank(annotation.labelPath())) {
+            throw new GenerationException("@RemoteOptions urlQueryParam and labelPath must not be blank: "
+                    + field.getDeclaringClass().getName() + "." + field.getName());
+        }
+        if (type == String.class && StringUtils.isBlank(annotation.valuePath())) {
+            throw new GenerationException("@RemoteOptions valuePath is required for a String field: "
+                    + field.getDeclaringClass().getName() + "." + field.getName());
+        }
+        return new RemoteSelectUi(annotation);
     }
 
     private static Set<String> supportedParams(Class<? extends ShellToolConfig> configClass) {
@@ -183,7 +223,7 @@ public final class ToolConfigFactory {
     }
 
     private static void setField(Class<? extends ShellToolConfig> configClass, ShellToolConfig config,
-                                 String name, String value) {
+                                 String name, Object value) {
         Field field = findField(configClass, name);
         if (field == null) {
             throw new InvalidInputException("Unsupported param for tool config " + configClass.getName()
@@ -193,15 +233,42 @@ public final class ToolConfigFactory {
             field.setAccessible(true);
             Class<?> type = field.getType();
             if (type == String.class) {
-                field.set(config, value);
+                if (!(value instanceof String)) {
+                    throw expectedValueType(name, "string", value);
+                }
+                field.set(config, ((String) value).trim());
             } else if (type.isEnum()) {
-                field.set(config, toEnum(type, name, value));
+                if (!(value instanceof String)) {
+                    throw expectedValueType(name, "string", value);
+                }
+                field.set(config, toEnum(type, name, ((String) value).trim()));
+            } else if (Map.class.isAssignableFrom(type)) {
+                if (!(value instanceof Map)) {
+                    throw expectedValueType(name, "object", value);
+                }
+                field.set(config, copyMap(name, (Map<?, ?>) value));
             } else {
                 throw new GenerationException("Unsupported param type for " + name + ": " + type.getSimpleName());
             }
         } catch (IllegalAccessException e) {
             throw new GenerationException("failed to set param " + name + ": " + e.getMessage(), e);
         }
+    }
+
+    private static InvalidInputException expectedValueType(String name, String expected, Object value) {
+        return new InvalidInputException("Expected " + expected + " value for param " + name
+                + ", got " + value.getClass().getSimpleName());
+    }
+
+    private static Map<String, Object> copyMap(String name, Map<?, ?> value) {
+        Map<String, Object> copy = new LinkedHashMap<String, Object>();
+        for (Map.Entry<?, ?> entry : value.entrySet()) {
+            if (!(entry.getKey() instanceof String)) {
+                throw new InvalidInputException("Expected string keys in object value for param " + name);
+            }
+            copy.put((String) entry.getKey(), entry.getValue());
+        }
+        return copy;
     }
 
     private static Field findField(Class<?> configClass, String name) {
@@ -264,15 +331,22 @@ public final class ToolConfigFactory {
         private final ConfigField.Group group;
         private final String label;
         private final String placeholder;
+        private final RemoteSelectUi ui;
 
         public ConfigParam(String name, String type, List<String> options, ConfigField.Group group,
                            String label, String placeholder) {
+            this(name, type, options, group, label, placeholder, null);
+        }
+
+        public ConfigParam(String name, String type, List<String> options, ConfigField.Group group,
+                           String label, String placeholder, RemoteSelectUi ui) {
             this.name = name;
             this.type = type;
             this.options = options;
             this.group = group;
             this.label = label;
             this.placeholder = placeholder;
+            this.ui = ui;
         }
 
         public String getName() {
@@ -280,14 +354,14 @@ public final class ToolConfigFactory {
         }
 
         /**
-         * @return {@code string} or {@code enum}
+         * @return {@code string}, {@code enum} or {@code object}
          */
         public String getType() {
             return type;
         }
 
         /**
-         * @return enum constant names; empty for string params
+         * @return enum constant names; empty for string and object params
          */
         public List<String> getOptions() {
             return options;
@@ -309,6 +383,58 @@ public final class ToolConfigFactory {
          */
         public String getPlaceholder() {
             return placeholder;
+        }
+
+        /**
+         * @return remote-select metadata, or null for an ordinary input
+         */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public RemoteSelectUi getUi() {
+            return ui;
+        }
+    }
+
+    /**
+     * UI metadata for a {@link RemoteOptions} field.
+     */
+    public static class RemoteSelectUi {
+        private final String kind = "remote-select";
+        private final String urlQueryParam;
+        private final String itemsPath;
+        private final String labelPath;
+        private final String valuePath;
+        private final boolean required;
+
+        private RemoteSelectUi(RemoteOptions annotation) {
+            this.urlQueryParam = annotation.urlQueryParam();
+            this.itemsPath = annotation.itemsPath();
+            this.labelPath = annotation.labelPath();
+            this.valuePath = annotation.valuePath();
+            this.required = annotation.required();
+        }
+
+        public String getKind() {
+            return kind;
+        }
+
+        public String getUrlQueryParam() {
+            return urlQueryParam;
+        }
+
+        public String getItemsPath() {
+            return itemsPath;
+        }
+
+        public String getLabelPath() {
+            return labelPath;
+        }
+
+        public String getValuePath() {
+            return valuePath;
+        }
+
+        public boolean isRequired() {
+            return required;
         }
     }
 }

@@ -30,6 +30,9 @@ export interface ShellConfig {
   lambdaSuffix?: boolean;
 }
 
+export type ShellToolConfigObject = Record<string, unknown>;
+export type ShellToolConfigValue = string | ShellToolConfigObject;
+
 export interface ShellToolConfig {
   shellClassName?: string;
   pass?: string;
@@ -41,13 +44,24 @@ export interface ShellToolConfig {
   shellClassBase64?: string;
   encryptor?: string;
   implementationClass?: string;
+  [key: string]: ShellToolConfigValue | undefined;
+}
+
+export interface RemoteSelectUiHint {
+  kind: "remote-select";
+  urlQueryParam: string;
+  itemsPath: string;
+  labelPath: string;
+  valuePath?: string;
+  required: boolean;
 }
 
 export interface ShellToolConfigParam {
   name: string;
-  type: "string" | "enum";
+  type: "string" | "enum" | "object";
   options: Array<string>;
   group: "BASIC" | "ADVANCED";
+  ui?: RemoteSelectUiHint;
 }
 
 export interface ShellToolConfigEntry {

@@ -13,8 +13,9 @@ import java.lang.annotation.Target;
  * 字段的声明顺序就是表单里的顺序；没标注的字段（如生成期才写入的
  * {@code shellClassName} / {@code shellTemplateClassName}）不对外暴露。
  * <p>
- * 目前支持 {@code String} 与枚举两种字段类型：String 得到文本输入，枚举得到下拉框
- * （可选值即枚举常量名）。绑定时只接受标注过的字段名，写错名字会直接报错而不是静默忽略。
+ * 目前支持 {@code String}、枚举与 {@code Map<String, Object>} 三种字段类型：String 得到文本输入，
+ * 枚举得到下拉框（可选值即枚举常量名），Map 得到结构化对象。需要远程下拉选项时可再加
+ * {@link RemoteOptions}。绑定时只接受标注过的字段名，写错名字会直接报错而不是静默忽略。
  *
  * @author ReaJason
  * @since 3.0.0

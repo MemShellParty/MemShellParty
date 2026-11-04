@@ -154,11 +154,39 @@ public class MyToolConfig extends ShellToolConfig {
 }
 ```
 
-- 只支持 `String` 与枚举；字段声明顺序就是表单顺序。
+- 支持 `String`、枚举与 `Map<String, Object>`；字段声明顺序就是表单顺序。
 - 配置类需要 `public static builder()`，且 builder 有 `build()`；Lombok 的 `@SuperBuilder` 会自动生成。
 - 未标注的字段（`shellClassName`、`shellTemplateClassName`）不对外暴露。
-- 参数名是字段名；留空走 builder 默认值，写错名字直接抛 `GenerationException`。
+- 参数名是字段名；`null` 和留空字符串走 builder 默认值，写错名字直接抛 `GenerationException`。
 - `label`、`placeholder`、`group`（`BASIC` / `ADVANCED`）只影响展示。
+
+#### 远程下拉选项
+
+需要由外部平台提供个性化选项时，在 `String` 或 `Map<String, Object>` 字段上追加
+`@RemoteOptions`。完整对象模式的声明如下：
+
+```java
+@ConfigField(label = "Profile")
+@RemoteOptions(
+        urlQueryParam = "profileUrlParam",
+        itemsPath = "data.items",
+        labelPath = "name",
+        required = true)
+private Map<String, Object> profile;
+```
+
+外部平台通过 `?profileUrlParam=<url-encoded-options-url>` 启动页面。Web 端读取该参数后，将其保存到
+当前浏览器标签页的 `sessionStorage`，再从地址栏移除；内存马、探测马等页面来回切换或当前标签页刷新后，
+仍可以恢复选项地址。新启动参数会覆盖旧值，新浏览器标签页需要重新从外部平台进入。
+
+RemoteSelect 由浏览器直接发起 GET，支持 HTTP/HTTPS，外部接口需要允许 Web 页面所在 origin 的 CORS。
+上游后端不会请求或代理该地址。`itemsPath` 指向响应中的对象数组，空串表示根数组；`labelPath` 只用于纯文本
+显示。完整对象模式把选中 item 作为 JSON object 绑定到 `Map`，不会把选项 URL 或选中对象写入生成历史。
+HTTP 的凭据暴露与响应篡改风险由部署方和外部平台评估。
+
+只需要稳定 ID 时改用 `String` 字段，并设置 `valuePath = "id"`。String/ID 模式的 `valuePath` 必填。
+两种模式都不构成生成时的权限证明；生成器必须校验自己消费的字段。需要验证权限是否仍有效时，应使用 ID
+模式并由插件生成端自行回查外部平台。
 
 生成器通常继承 `ByteBuddyShellGenerator<T>`，在 `redefineTemplate()` 上把配置写进 shell 字段：
 
