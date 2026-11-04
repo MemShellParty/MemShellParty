@@ -102,6 +102,18 @@ class ToolConfigFactoryTest {
     }
 
     @Test
+    void stringAndEnumValuesKeepTheirTrimSemantics() {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("paramName", "  cmd  ");
+        params.put("encryptor", "  base64  ");
+
+        ShellToolConfig config = ToolConfigFactory.fromParams(ShellTool.Command, params);
+
+        assertEquals("cmd", readParam(config, "paramName"));
+        assertEquals("BASE64", String.valueOf(readParam(config, "encryptor")));
+    }
+
+    @Test
     void generationParamsStayBindableWithoutBeingExposed() {
         ShellToolConfig config = ToolConfigFactory.fromParams(ShellTool.Godzilla,
                 Collections.singletonMap("shellClassName", "com.example.Shell"));
