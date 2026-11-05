@@ -81,6 +81,12 @@ export function ShellToolTabContent({
   const randomizesVisibleFields = randomParams && randomizableBasicParams.length > 0;
   const displayedBasicParams = displayedShellToolParams(basicParams, randomizesVisibleFields);
   const displayedAdvancedParams = displayedShellToolParams(advancedParams, randomizesVisibleFields);
+  const singleRemoteParam =
+    displayedAdvancedParams.length === 0 &&
+    displayedBasicParams.length === 1 &&
+    isRemoteParam(displayedBasicParams[0])
+      ? displayedBasicParams[0]
+      : undefined;
   // 没有可随机化的基础参数时不展示随机开关，高级参数仍需保持可见。
 
   const handleRandomParamsChange = (checked: boolean) => {
@@ -134,6 +140,7 @@ export function ShellToolTabContent({
             </FieldLabel>
             {isRemoteParam(param) ? (
               <RemoteSelect
+                autoSelectFirst={param.name === singleRemoteParam?.name}
                 hint={param.ui}
                 objectMode={param.type === "object"}
                 onChange={field.onChange}
@@ -193,7 +200,9 @@ export function ShellToolTabContent({
             />
           </div>
         )}
-        {(displayedBasicParams.length > 0 || displayedAdvancedParams.length > 0) && (
+        {singleRemoteParam ? (
+          renderField(singleRemoteParam)
+        ) : displayedBasicParams.length > 0 || displayedAdvancedParams.length > 0 ? (
           <SwitchFieldsPanel className="space-y-2">
             {displayedBasicParams.length > 0 && (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -218,7 +227,7 @@ export function ShellToolTabContent({
               </Collapsible>
             )}
           </SwitchFieldsPanel>
-        )}
+        ) : null}
       </div>
     </TabsContent>
   );
