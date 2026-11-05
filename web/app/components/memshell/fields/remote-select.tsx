@@ -21,11 +21,13 @@ export function RemoteSelect({
   objectMode,
   value,
   onChange,
+  autoSelectFirst = false,
 }: Readonly<{
   hint: RemoteSelectUiHint;
   objectMode: boolean;
   value: ShellToolConfigValue | undefined;
   onChange: (value: ShellToolConfigValue | undefined) => void;
+  autoSelectFirst?: boolean;
 }>) {
   const { t } = useTranslation(["memshell", "common"]);
   const [sourceUrl, setSourceUrl] = useState("");
@@ -67,6 +69,7 @@ export function RemoteSelect({
       .then((nextOptions) => {
         if (controller.signal.aborted) return;
         setOptions(nextOptions);
+        if (autoSelectFirst) onChangeRef.current(nextOptions[0]?.value);
         setStatus("ready");
       })
       .catch(() => {
@@ -74,7 +77,7 @@ export function RemoteSelect({
         setStatus("error");
       });
     return () => controller.abort();
-  }, [sourceResolved, sourceUrl, retryNonce, hint, objectMode]);
+  }, [sourceResolved, sourceUrl, retryNonce, hint, objectMode, autoSelectFirst]);
 
   const selectItems = useMemo(
     () => options.map((option) => ({ value: option.key, label: option.label })),

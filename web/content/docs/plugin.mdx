@@ -193,7 +193,8 @@ private Map<String, Object> profile;
 RemoteSelect 由浏览器直接发起 GET，支持 HTTP/HTTPS，外部接口需要允许 Web 页面所在 origin 的 CORS。
 上游后端不会请求或代理该地址。`itemsPath` 指向响应中的对象数组，空串表示根数组；`labelPath` 只用于纯文本
 显示。完整对象模式把选中 item 作为 JSON object 绑定到 `Map`，不会把选项 URL 或选中对象写入生成历史。
-HTTP 的凭据暴露与响应篡改风险由部署方和外部平台评估。
+工具只有一个基础 RemoteSelect 且没有高级参数时，Web 端直接展示顶层字段，并在加载成功后默认选中第一项；
+其他参数布局仍保持手动选择。HTTP 的凭据暴露与响应篡改风险由部署方和外部平台评估。
 
 只需要稳定 ID 时改用 `String` 字段，并设置 `valuePath = "id"`。String/ID 模式的 `valuePath` 必填。
 两种模式都不构成生成时的权限证明；生成器必须校验自己消费的字段。需要验证权限是否仍有效时，应使用 ID
