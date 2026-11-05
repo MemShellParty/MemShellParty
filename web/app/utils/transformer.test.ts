@@ -5,6 +5,7 @@ import { test } from "node:test";
 
 import { type MemShellFormSchema, memShellFormSchema } from "@/types/schema";
 import {
+  generateShareableUrl,
   missingRequiredRemoteFields,
   restoreMemShellFormValues,
   sanitizeMemShellHistoryValues,
@@ -21,6 +22,21 @@ function memShellValues(overrides: Record<string, unknown> = {}): MemShellFormSc
     ...overrides,
   };
 }
+
+test("shareable URLs retain Godzilla even when it is not the configured first tool", () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: { location: { origin: "https://example.test", pathname: "/memshell" } },
+  });
+  try {
+    const url = new URL(generateShareableUrl(memShellValues({ shellTool: "Godzilla" })));
+    assert.equal(url.searchParams.get("shellTool"), "Godzilla");
+  } finally {
+    if (previousWindow) Object.defineProperty(globalThis, "window", previousWindow);
+    else Reflect.deleteProperty(globalThis, "window");
+  }
+});
 
 test("memshell transformation defaults a missing obfuscation scope to ALL", () => {
   const { shellConfig } = transformToPostData(memShellValues());

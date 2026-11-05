@@ -201,7 +201,7 @@ export function generateShareableUrl(values: MemShellFormSchema): string {
   addParam("debug", values.debug, false);
   addParam("byPassJavaModule", values.byPassJavaModule, false);
   addParam("shellClassName", values.shellClassName, "");
-  addParam("shellTool", values.shellTool, "Godzilla");
+  addParam("shellTool", values.shellTool, "");
   addParam("shellType", values.shellType, "Listener");
   addParam("urlPattern", values.urlPattern, "/*");
   addParam("pass", values.pass, "pass");

@@ -22,7 +22,6 @@ import {
   type MemShellResult,
   type PackerConfig,
   type ShellToolConfigEntry,
-  ShellToolType,
 } from "@/types/memshell";
 import {
   type MemShellFormSchema,
@@ -48,7 +47,9 @@ const defaultValues: MemShellFormSchema = {
   debug: false,
   byPassJavaModule: false,
   shellClassName: "",
-  shellTool: ShellToolType.Godzilla,
+  // 配置加载后由 MainConfigPanel 选择当前服务下排序第一的工具；不能写死内置工具，
+  // 否则排序更高的用户插件永远不会成为默认值。
+  shellTool: "",
   shellType: "Listener",
   urlPattern: "/*",
   pass: "",
