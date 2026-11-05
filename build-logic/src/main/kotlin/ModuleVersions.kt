@@ -5,7 +5,7 @@ object ModuleVersions {
     // 只有 BOM 跟随根版本，其余发布模块都在这里维护独立 release 基线。
     // 根版本为 SNAPSHOT 时，只有 publishIndependentModules 选中的模块追加 -SNAPSHOT。
     val independentBaseVersions: Map<String, String> = linkedMapOf(
-        ":memshell-party-common" to "3.1.0",
+        ":memshell-party-common" to "3.0.0",
         ":memshell-party-api" to "3.1.0",
         ":memshell-party-core" to "3.1.0",
         ":memshell-party-gui:memshell-party-gui-sdk" to "3.0.0",
