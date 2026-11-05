@@ -151,8 +151,19 @@ public class MyToolConfig extends ShellToolConfig {
     @ConfigField(label = "密码", placeholder = "留空随机生成")
     @Builder.Default
     private String pass = "change-me";
+
+    @Override
+    public void validate() {
+        if (pass == null || pass.trim().isEmpty()) {
+            throw new InvalidInputException("pass is required");
+        }
+    }
 }
 ```
+
+3.1.0 起可覆写 `ShellToolConfig#validate()` 校验插件自己的配置。统一生成入口会在参数绑定完成后、创建生成器前
+调用一次；直接传入配置对象与通过 Map 绑定参数走同一套校验。这里不要依赖 `shellTemplateClassName` 等生成期才
+填充的字段。入参错误抛出 `InvalidInputException`，无需为了保留异常类型而把校验放进生成器的 `getBuilder()`。
 
 - 支持 `String`、枚举与 `Map<String, Object>`；字段声明顺序就是表单顺序。
 - 配置类需要 `public static builder()`，且 builder 有 `build()`；Lombok 的 `@SuperBuilder` 会自动生成。
@@ -204,7 +215,8 @@ public class MyToolGenerator extends ByteBuddyShellGenerator<MyToolConfig> {
 }
 ```
 
-`MemShellGenerator` 通过 `(ShellConfig, 配置类)` 的 public 构造器创建生成器；模板类只按字节读取，不加载进
+`MemShellGenerator` 通过 `(ShellConfig, 配置类)` 的 public 构造器创建生成器；构造器抛出的
+`InvalidInputException` 会解包并原样抛出，其他失败保留原始 cause 和消息。模板类只按字节读取，不加载进
 JVM。shell 模板同样要和 provider 放在同一个 jar。工具名不要与内置工具重名（`Godzilla`、`GodzillaSession`、
 `Behinder`、`Command`、`Suo5`、`AntSword`、`NeoreGeorg`、`Proxy`、`Custom`）。
 

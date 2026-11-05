@@ -27,6 +27,7 @@ import net.bytebuddy.jar.asm.ClassReader;
 import net.bytebuddy.jar.asm.Opcodes;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -67,6 +68,7 @@ public class MemShellGenerator {
     }
 
     public MemShellResult generate(ShellConfig shellConfig, InjectorConfig injectorConfig, ShellToolConfig shellToolConfig) {
+        shellToolConfig.validate();
         // 入口补齐：调用方只保证传了必要字段（反序列化出来的配置，没传的字段就是 null / 0），缺的在这里
         // 按默认值补上并写回，下游 server 模块与注入器生成不必各自判空。targetJreVersion 的 0 不是合法
         // class 版本，等同「没传」。写回是为了让调用方拿到的配置与真正生成时用的一致。
@@ -352,6 +354,18 @@ public class MemShellGenerator {
         } catch (InvalidInputException e) {
             // 入参错误不能被包装成生成失败，否则 REST 层会误报 500
             throw e;
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            if (cause instanceof InvalidInputException) {
+                throw (InvalidInputException) cause;
+            }
+            if (cause instanceof IllegalArgumentException) {
+                throw new InvalidInputException(cause.getMessage(), cause);
+            }
+            if (cause instanceof GenerationException) {
+                throw (GenerationException) cause;
+            }
+            throw new GenerationException("shell generate failed " + cause.getMessage(), cause);
         } catch (IllegalArgumentException e) {
             // ClassBytesDecoder 等解码层以 IllegalArgumentException 报入参错误，保持 GUI 的 catch 类型不变
             throw new InvalidInputException(e.getMessage(), e);
