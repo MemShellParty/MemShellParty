@@ -105,5 +105,12 @@
   "targetJdkVersion": "JRE Version",
   "decompile": "Decompile",
   "decompiling": "Decompiling...",
-  "decompileFailed": "Failed to decompile source: {{error}}"
+  "decompileFailed": "Failed to decompile source: {{error}}",
+  "plugins.title": "Installed Plugins",
+  "plugins.author": "Author",
+  "plugins.homepage": "Homepage",
+  "plugins.jar": "Jar File",
+  "plugins.spi": "Provides",
+  "plugins.loadFailed": "Load failed",
+  "plugins.empty": "No external plugins installed. Place plugin jars in the plugins directory and restart."
 }

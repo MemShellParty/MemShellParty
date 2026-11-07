@@ -23,12 +23,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -105,6 +109,94 @@ class PluginBootstrapTest {
         assertTrue(result.getWarnings().stream().anyMatch(message -> message.contains("Server 重名: SharedServer")));
         assertTrue(result.getWarnings().stream().anyMatch(message -> message.contains("ShellTool 重名: SharedTool")));
         assertTrue(result.getWarnings().stream().anyMatch(message -> message.contains("Packer 重名: SharedPacker")));
+    }
+
+    @Test
+    void readsPluginDescriptorIncludingUtf8() throws Exception {
+        Path jar = tempDir.resolve("描述插件.jar");
+        try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jar))) {
+            output.putNextEntry(new JarEntry("META-INF/memshell-party-plugin.properties"));
+            output.write(("name=示例插件\n"
+                    + "version=1.2.3\n"
+                    + "author=作者\n"
+                    + "description=中文描述\n"
+                    + "homepage=https://example.com/plugin\n"
+                    + "license=MIT\n"
+                    + "source=https://example.com/src\n").getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+        }
+
+        PluginLoadResult result = PluginBootstrap.load(tempDir, getClass().getClassLoader());
+
+        assertEquals(1, result.getPlugins().size());
+        PluginDescriptor descriptor = result.getPlugins().get(0);
+        assertEquals("描述插件.jar", descriptor.getJarFileName());
+        assertEquals("示例插件", descriptor.getName());
+        assertEquals("1.2.3", descriptor.getVersion());
+        assertEquals("作者", descriptor.getAuthor());
+        assertEquals("中文描述", descriptor.getDescription());
+        assertEquals("https://example.com/plugin", descriptor.getHomepage());
+        assertEquals("MIT", descriptor.getLicense());
+        assertEquals("https://example.com/src", descriptor.getSource());
+        assertTrue(descriptor.getSpiServices().isEmpty());
+        assertTrue(descriptor.isLoaded());
+        assertNull(descriptor.getLoadError());
+    }
+
+    @Test
+    void fallsBackToManifestAndListsBrokenJar() throws Exception {
+        Manifest manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        manifest.getMainAttributes().putValue("Implementation-Title", "Manifest Plugin");
+        manifest.getMainAttributes().putValue("Implementation-Version", "2.0.0");
+        manifest.getMainAttributes().putValue("Implementation-Vendor", "Vendor");
+        manifest.getMainAttributes().putValue("Implementation-URL", "https://example.com/manifest");
+        Path manifestJar = tempDir.resolve("manifest-plugin.jar");
+        try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(manifestJar), manifest)) {
+            addService(output, "com.reajason.javaweb.memshell.spi.ServerProvider",
+                    "fixture.MissingProvider");
+        }
+        createMalformedPluginJar();
+
+        PluginLoadResult result = PluginBootstrap.load(tempDir, getClass().getClassLoader());
+
+        PluginDescriptor manifestPlugin = result.getPlugins().stream()
+                .filter(plugin -> "manifest-plugin.jar".equals(plugin.getJarFileName()))
+                .findFirst().orElseThrow(() -> new AssertionError("plugin descriptor not found"));
+        assertEquals("Manifest Plugin", manifestPlugin.getName());
+        assertEquals("2.0.0", manifestPlugin.getVersion());
+        assertEquals("Vendor", manifestPlugin.getAuthor());
+        assertEquals("https://example.com/manifest", manifestPlugin.getHomepage());
+        assertTrue(manifestPlugin.isLoaded());
+
+        PluginDescriptor broken = result.getPlugins().stream()
+                .filter(plugin -> "0-bad.jar".equals(plugin.getJarFileName()))
+                .findFirst().orElseThrow(() -> new AssertionError("plugin descriptor not found"));
+        assertEquals("0-bad", broken.getName());
+        assertFalse(broken.isLoaded());
+        assertNotNull(broken.getLoadError());
+        assertTrue(broken.getSpiServices().contains("Packer"));
+    }
+
+    @Test
+    void brokenDescriptorDoesNotPreventPluginLoad() throws Exception {
+        Path jar = tempDir.resolve("broken-descriptor.jar");
+        try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jar))) {
+            output.putNextEntry(new JarEntry("META-INF/memshell-party-plugin.properties"));
+            output.write("name=\\uZZZZ\n".getBytes(StandardCharsets.UTF_8));
+            output.closeEntry();
+            addService(output, "com.reajason.javaweb.memshell.spi.ServerProvider",
+                    "fixture.MissingProvider");
+        }
+
+        PluginLoadResult result = PluginBootstrap.load(tempDir, getClass().getClassLoader());
+
+        PluginDescriptor descriptor = result.getPlugins().stream()
+                .filter(plugin -> "broken-descriptor.jar".equals(plugin.getJarFileName()))
+                .findFirst().orElseThrow(() -> new AssertionError("plugin descriptor not found"));
+        assertTrue(descriptor.isLoaded());
+        assertEquals("broken-descriptor", descriptor.getName());
+        assertTrue(result.getWarnings().stream().anyMatch(message -> message.contains("读取插件描述失败")));
     }
 
     private void createMalformedPluginJar() throws IOException {

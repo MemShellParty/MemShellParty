@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -16,8 +17,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
+import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 /**
  * boot 与桌面发行版共用的启动期插件入口。只装载三类核心 SPI，不接管宿主的其他 SPI。
@@ -25,12 +29,24 @@ import java.util.jar.JarFile;
 public final class PluginBootstrap {
     public static final String DIRECTORY_PROPERTY = "memshell.plugins.dir";
     public static final String DIRECTORY_ENV = "MEMSHELL_PLUGINS_DIR";
+    /**
+     * 插件 jar 内可选的元信息描述符。字段全部可选，缺失时回退到 MANIFEST 与 jar 文件名。
+     */
+    public static final String DESCRIPTOR_RESOURCE = "META-INF/memshell-party-plugin.properties";
 
     private static final String[] SPI_SERVICES = {
             "com.reajason.javaweb.memshell.spi.ServerProvider",
             "com.reajason.javaweb.memshell.spi.ShellToolProvider",
             "com.reajason.javaweb.packer.Packer"
     };
+
+    private static final String[] SPI_SERVICE_NAMES = {
+            "ServerProvider",
+            "ShellToolProvider",
+            "Packer"
+    };
+
+    private static volatile PluginLoadResult lastResult;
 
     private PluginBootstrap() {
     }
@@ -56,15 +72,37 @@ public final class PluginBootstrap {
         List<Path> scannedJars = scanPluginJars(normalizedDirectory, warnings);
         List<URL> urls = new ArrayList<>(scannedJars.size());
         List<Path> loadedJars = new ArrayList<>(scannedJars.size());
+        List<PluginDescriptor> plugins = new ArrayList<>(scannedJars.size());
         for (Path jar : scannedJars) {
-            if (!hasValidServiceDescriptors(jar, warnings)) {
+            PluginJar pluginJar;
+            try {
+                pluginJar = readPluginJar(jar);
+            } catch (IOException | RuntimeException e) {
+                String message = SpiLoader.message(e);
+                warnings.add("跳过损坏插件 jar: " + jar + ": " + message);
+                plugins.add(unreadableDescriptor(jar, message));
+                continue;
+            }
+            if (pluginJar.descriptorWarning != null) {
+                // 元信息损坏不应该阻止插件本身加载，回退到 manifest / 文件名继续。
+                warnings.add("读取插件描述失败: " + jar + ": " + pluginJar.descriptorWarning);
+            }
+            if (!pluginJar.isPlugin()) {
+                continue;
+            }
+            if (pluginJar.validationError != null) {
+                warnings.add("跳过损坏插件 jar: " + jar + ": " + pluginJar.validationError);
+                plugins.add(pluginJar.toDescriptor(false, pluginJar.validationError));
                 continue;
             }
             try {
                 urls.add(jar.toUri().toURL());
                 loadedJars.add(jar);
+                plugins.add(pluginJar.toDescriptor(true, null));
             } catch (MalformedURLException e) {
-                warnings.add("插件路径无效: " + jar + ": " + SpiLoader.message(e));
+                String message = SpiLoader.message(e);
+                warnings.add("插件路径无效: " + jar + ": " + message);
+                plugins.add(pluginJar.toDescriptor(false, message));
             }
         }
 
@@ -92,7 +130,17 @@ public final class PluginBootstrap {
         }
         warnings.addAll(MemShellRegistry.getInstance().getLoadErrors());
         warnings.addAll(PackerRegistry.getInstance().getLoadErrors());
-        return new PluginLoadResult(normalizedDirectory, loadedJars, warnings);
+        PluginLoadResult result = new PluginLoadResult(normalizedDirectory, loadedJars, plugins, warnings);
+        lastResult = result;
+        return result;
+    }
+
+    /**
+     * 最近一次 {@link #load()} 的结果，供 boot 的 {@code /api/plugins} 与桌面端「关于」只读展示。
+     * 未加载过时返回 {@code null}；插件生命周期仍以重启为准，不存在热更新语义。
+     */
+    public static PluginLoadResult getLastResult() {
+        return lastResult;
     }
 
     static Path resolvePluginDirectory(String configured, Path baseDirectory) {
@@ -150,29 +198,145 @@ public final class PluginBootstrap {
         return jars;
     }
 
-    private static boolean hasValidServiceDescriptors(Path jar, List<String> warnings) {
+    private static PluginJar readPluginJar(Path jar) throws IOException {
+        String jarFileName = jar.getFileName() == null ? "" : jar.getFileName().toString();
+        Properties descriptor = new Properties();
+        boolean hasDescriptor = false;
+        String descriptorWarning = null;
+        List<String> spiServices = new ArrayList<>();
+        String validationError = null;
+        String implementationTitle = null;
+        String implementationVersion = null;
+        String implementationVendor = null;
+        String implementationUrl = null;
         try (JarFile jarFile = new JarFile(jar.toFile())) {
-            for (String service : SPI_SERVICES) {
-                JarEntry entry = jarFile.getJarEntry("META-INF/services/" + service);
+            JarEntry descriptorEntry = jarFile.getJarEntry(DESCRIPTOR_RESOURCE);
+            if (descriptorEntry != null) {
+                hasDescriptor = true;
+                try (Reader reader = new InputStreamReader(
+                        jarFile.getInputStream(descriptorEntry), StandardCharsets.UTF_8)) {
+                    descriptor.load(reader);
+                } catch (IOException | RuntimeException e) {
+                    // 元信息文件本身坏了只影响展示，下面仍然回退到 manifest / 文件名。
+                    descriptorWarning = SpiLoader.message(e);
+                }
+            }
+            Manifest manifest = jarFile.getManifest();
+            if (manifest != null) {
+                Attributes attributes = manifest.getMainAttributes();
+                implementationTitle = attributes.getValue("Implementation-Title");
+                implementationVersion = attributes.getValue("Implementation-Version");
+                implementationVendor = attributes.getValue("Implementation-Vendor");
+                implementationUrl = attributes.getValue("Implementation-URL");
+            }
+            for (int i = 0; i < SPI_SERVICES.length; i++) {
+                JarEntry entry = jarFile.getJarEntry("META-INF/services/" + SPI_SERVICES[i]);
                 if (entry == null) {
                     continue;
                 }
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        jarFile.getInputStream(entry), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        int comment = line.indexOf('#');
-                        String className = (comment >= 0 ? line.substring(0, comment) : line).trim();
-                        if (!className.isEmpty() && !isJavaClassName(className)) {
-                            throw new IOException("无效 SPI 实现类名: " + className);
-                        }
-                    }
+                spiServices.add(SPI_SERVICE_NAMES[i]);
+                if (validationError == null) {
+                    validationError = validateServiceDescriptor(jarFile, entry);
                 }
             }
-            return true;
-        } catch (IOException | RuntimeException e) {
-            warnings.add("跳过损坏插件 jar: " + jar + ": " + SpiLoader.message(e));
-            return false;
+        }
+        return new PluginJar(jarFileName, descriptor, hasDescriptor, descriptorWarning, spiServices,
+                implementationTitle, implementationVersion, implementationVendor, implementationUrl,
+                validationError);
+    }
+
+    private static String validateServiceDescriptor(JarFile jarFile, JarEntry entry) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                jarFile.getInputStream(entry), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                int comment = line.indexOf('#');
+                String className = (comment >= 0 ? line.substring(0, comment) : line).trim();
+                if (!className.isEmpty() && !isJavaClassName(className)) {
+                    return "无效 SPI 实现类名: " + className;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static PluginDescriptor unreadableDescriptor(Path jar, String message) {
+        String fileName = jar.getFileName() == null ? "" : jar.getFileName().toString();
+        return new PluginDescriptor(fileName, defaultPluginName(fileName), null, null, null, null,
+                null, null, Collections.<String>emptyList(), false, message);
+    }
+
+    private static String defaultPluginName(String jarFileName) {
+        if (jarFileName == null || jarFileName.isEmpty()) {
+            return "";
+        }
+        return jarFileName.toLowerCase(Locale.ROOT).endsWith(".jar")
+                ? jarFileName.substring(0, jarFileName.length() - 4)
+                : jarFileName;
+    }
+
+    private static String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null) {
+                String trimmed = value.trim();
+                if (!trimmed.isEmpty()) {
+                    return trimmed;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static final class PluginJar {
+        private final String jarFileName;
+        private final Properties descriptor;
+        private final boolean hasDescriptor;
+        private final String descriptorWarning;
+        private final List<String> spiServices;
+        private final String implementationTitle;
+        private final String implementationVersion;
+        private final String implementationVendor;
+        private final String implementationUrl;
+        private final String validationError;
+
+        private PluginJar(String jarFileName, Properties descriptor, boolean hasDescriptor,
+                          String descriptorWarning, List<String> spiServices,
+                          String implementationTitle, String implementationVersion,
+                          String implementationVendor, String implementationUrl,
+                          String validationError) {
+            this.jarFileName = jarFileName;
+            this.descriptor = descriptor;
+            this.hasDescriptor = hasDescriptor;
+            this.descriptorWarning = descriptorWarning;
+            this.spiServices = spiServices;
+            this.implementationTitle = implementationTitle;
+            this.implementationVersion = implementationVersion;
+            this.implementationVendor = implementationVendor;
+            this.implementationUrl = implementationUrl;
+            this.validationError = validationError;
+        }
+
+        private boolean isPlugin() {
+            return hasDescriptor || !spiServices.isEmpty();
+        }
+
+        private PluginDescriptor toDescriptor(boolean loaded, String loadError) {
+            String name = firstNonBlank(descriptor.getProperty("name"), implementationTitle,
+                    defaultPluginName(jarFileName));
+            String version = firstNonBlank(descriptor.getProperty("version"), implementationVersion);
+            String author = firstNonBlank(descriptor.getProperty("author"), implementationVendor);
+            String homepage = firstNonBlank(descriptor.getProperty("homepage"),
+                    descriptor.getProperty("releaseUrl"), descriptor.getProperty("url"),
+                    implementationUrl);
+            String description = firstNonBlank(descriptor.getProperty("description"));
+            String license = firstNonBlank(descriptor.getProperty("license"));
+            String source = firstNonBlank(descriptor.getProperty("source"),
+                    descriptor.getProperty("sourceUrl"));
+            return new PluginDescriptor(jarFileName, name, version, author, description, homepage,
+                    license, source, spiServices, loaded, loadError);
         }
     }
 
