@@ -21,12 +21,10 @@ protected void doOptions(HttpServletRequest req, HttpServletResponse resp);
 protected void doTrace(HttpServletRequest req, HttpServletResponse resp);
 ```
 
-Servlet 规范中规定了，对于非分布式应用来说，Servlet 容器必须确保对于每个 Servlet 定义只存在一个实例，但是 Web 服务是多线程的，所以 Servlet 是线程不安全的，在 Servlet 中的成员变量都是线程不安全的。
-
 针对 Servlet 的路径映射提供了注解的方式和 web.xml 方法，以下两种方式都能定义访问 `/foo` 即调用 CalculatorServlet 中对应的实现方法。
 
 ```java
-@WebServlet(”/foo”)
+@WebServlet("/foo")
 public class CalculatorServlet extends HttpServlet{
 //...
 }
@@ -47,7 +45,7 @@ public class CalculatorServlet extends HttpServlet{
 
 shell 的目的，就是为了定义一个入口，我们能与 Web 服务器进行交互。以下定义了一个命令回显的 ServletShell。
 
-1. doGet 调用转发给 doPost，这样我们即支持 GET 也支持 POST，防止某些情况下有请求方法的限制。
+1. doGet 调用转发给 doPost，这样我们既支持 GET 也支持 POST，防止某些情况下有请求方法的限制。
 2. 交互的入口是 `request.getParameter` 支持两种方式传参。GET/POST 请求发送 `/?paramName=whoami`，也可以发送 POST 请求时使用 `application/x-www-form-urlencoded` 发送 body 参数。`multipart/form-data` 是不支持从 `request.getParameter` 获取参数的。
 
 ```java

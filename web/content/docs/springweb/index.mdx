@@ -46,7 +46,7 @@ public class A {
     private B6 b6;
 
     // 通过构造方式注入
-    public A(A2 a2, A4, a4, B1 b1, B6 b6) {
+    public A(A2 a2, A4 a4, B1 b1, B6 b6) {
         this.a2 = a2;
         this.a4 = a4;
         this.b1 = b1;
@@ -55,20 +55,20 @@ public class A {
 
     public void f1(){
         // so many code in here
-        this.a2.do();
+        this.a2.doSomething();
         // do
         // so many code in here
-        this.a2.do();
+        this.a4.doSomething();
         // do
     }
 
     public void f2(){
         // so many code in here
-        this.b1.do();
+        this.b1.doSomething();
         // do something
 
         // so many code in here
-        this.b6.do();
+        this.b6.doSomething();
         // do something
     }
 }
@@ -78,7 +78,7 @@ org.springframework.beans 和 org.springframework.context 包是 Spring Framewor
 org.springframework.aop 提供了 Spring 自己定义的 AOP 概念整合 AspectJ 对 Bean 进行增强，使得我们能面向切面编程，例如事务、日志、安全等等。
 
 ApplicationContext 是 BeanFactory 的子接口。在漏洞注入中我们常用的是 org.springframework.context.support.ClassPathXmlApplicationContext，解析 XML bean 配置，
-而后来 Spring 提供了基于注解的 bean 配置方式，也是目前最常用的，使用的是 org.springframework.context.annotation.AnnotationConfigApplicationContext。因此在 Spring 应用中我们只要想法设法拿到 ApplicationContext 我们就能手动管理业务中几乎所有的 Java 对象。
+而后来 Spring 提供了基于注解的 bean 配置方式，也是目前最常用的，使用的是 org.springframework.context.annotation.AnnotationConfigApplicationContext。因此在 Spring 应用中我们只要想方设法拿到 ApplicationContext 我们就能手动管理业务中几乎所有的 Java 对象。
 
 ## Spring Web 框架
 
@@ -110,7 +110,7 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
             // Handler 可以五花八门，为了接口统一会转换成对应的 HandlerAdapter
             HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
-            // 执行 Interceptor preHandler 方法，判断是否还需要继续执行
+            // 执行 Interceptor preHandle 方法，判断是否还需要继续执行
             if (!mappedHandler.applyPreHandle(processedRequest, response)) {
                 return;
             }
@@ -118,7 +118,7 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
             // 处理 Handler 中的逻辑，也就是 Controller 中的具体业务代码
             mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
-            // 执行 Interceptor postHandler 方法
+            // 执行 Interceptor postHandle 方法
             mappedHandler.applyPostHandle(processedRequest, response, mv);
         }
         catch (Exception ex) {
@@ -128,7 +128,7 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
             // ...
         }
 
-        // 对返回的 ModelAndView 进行封装转为响应流放回给用户
+        // 对返回的 ModelAndView 进行封装转为响应流返回给用户
         processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
     }
     catch (Exception ex) {

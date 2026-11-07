@@ -249,17 +249,26 @@ Servlet 3.1。
 
 WebLogic 使用的包名为 `weblogic.`，服务类型选择 WebLogic 进行内存马的生成。
 
+<div className="weblogic-version-table">
 <figure>
 
-| Version         | Servlet | Filter | Listener | WebSocket | RawWebSocket | AgentServletContext |
-| --------------- | :-----: | :----: | :------: | :-------: | :----------: | :-----------------: |
-| WebLogic 10.3.6 |   ✔️    |   ✔️   |    ✔️    |    ❌     |      ✔️      |         ✔️          |
-| WebLogic 12.x   |   ✔️    |   ✔️   |    ✔️    |    ✔️     |      ✔️      |         ✔️          |
-| WebLogic 14.x   |   ✔️    |   ✔️   |    ✔️    |    ✔️     |      ✔️      |         ✔️          |
-| WebLogic 15.x   |   ✔️    |   ✔️   |    ✔️    |    ✔️     |      ✔️      |         ✔️          |
+| Version         | Servlet | JakartaServlet | Filter | JakartaFilter | Listener | JakartaListener | WebSocket | JakartaWebSocket | RawWebSocket | JakartaRawWebSocket | AgentServletContext |
+| --------------- | :-----: | :------------: | :----: | :-----------: | :------: | :-------------: | :-------: | :--------------: | :----------: | :-----------------: | :-----------------: |
+| WebLogic 10.3.6 |   ✔️    |                |   ✔️   |               |    ✔️    |                 |    ❌     |                  |      ✔️      |                     |         ✔️          |
+| WebLogic 12.x   |   ✔️    |                |   ✔️   |               |    ✔️    |                 |    ✔️     |                  |      ✔️      |                     |         ✔️          |
+| WebLogic 14.x   |   ✔️    |                |   ✔️   |               |    ✔️    |                 |    ✔️     |                  |      ✔️      |                     |         ✔️          |
+| WebLogic 15.x   |         |       ✔️       |        |      ✔️       |          |       ✔️        |           |        ✔️        |              |         ✔️          |         ✔️          |
 
 <figcaption align="center">表 7：WebLogic 各版本内存马挂载类型参考表</figcaption>
 </figure>
+</div>
+
+<style>{`
+  .weblogic-version-table table th:first-child,
+  .weblogic-version-table table td:first-child {
+    min-width: 150px;
+  }
+`}</style>
 
 WebLogic 10.3.6 没有可用的 JSR-356 WebSocket 实现，WebSocket 挂载类型不可用，但可以选择 RawWebSocket；12.2.1+
 起通过 JSR-356 `ServerContainer` 注册 `Endpoint`。WebSocket / RawWebSocket 马按所选类型使用 javax（12.x/14.x）
@@ -274,12 +283,12 @@ WebSphere 是 IBM 研发的商用 Servlets 容器，开源版本为 Websphere li
 
 <figure>
 
-| Version       | Servlet | Filter | Listener | WebSocket | JakartaWebSocket | RawWebSocket |           AgentFilterManager           |
-| ------------- | :-----: | :----: | :------: | :-------: | :--------------: | :----------: | :------------------------------------: |
-| WebSphere 7.x |   ✔️    |   ✔️   |    ✔️    |           |                  |      ✔️      | ✔️（需要开启 debug 模式才允许 attach） |
-| WebSphere 8.x |   ✔️    |   ✔️   |    ✔️    |           |                  |      ✔️      |                   ✔️                   |
-| WebSphere 9.x |   ✔️    |   ✔️   |    ✔️    |    ✔️     |                  |      ✔️      |                   ✔️                   |
-| Open Liberty  |   ✔️    |   ✔️   |    ✔️    |    ✔️     |                  |              |                   ✔️                   |
+| Version       | Servlet | Filter | Listener | WebSocket | RawWebSocket |           AgentFilterManager           |
+| ------------- | :-----: | :----: | :------: | :-------: | :----------: | :------------------------------------: |
+| WebSphere 7.x |   ✔️    |   ✔️   |    ✔️    |           |      ✔️      | ✔️（需要开启 debug 模式才允许 attach） |
+| WebSphere 8.x |   ✔️    |   ✔️   |    ✔️    |           |      ✔️      |                   ✔️                   |
+| WebSphere 9.x |   ✔️    |   ✔️   |    ✔️    |    ✔️     |      ✔️      |                   ✔️                   |
+| Open Liberty  |   ✔️    |   ✔️   |    ✔️    |    ✔️     |              |                   ✔️                   |
 
 <figcaption align="center">表 8：WebSphere 各版本内存马挂载类型参考表</figcaption>
 </figure>
@@ -296,17 +305,26 @@ BES 宝兰德，其基于 Tomcat 进行二开，在 BES 9.5.1 版本中没有进
 版本之后包名修改为了 `com.bes.enterprise.`。因此 BES 9.5.1 版本，服务类型选择 Tomcat 进行内存马的生成，BES 9.5.2+ 服务类型选择
 BES 进行内存马的生成。
 
+<div className="bes-version-table">
 <figure>
 
-| Version    | Filter | Listener | Valve | AgentFilterChain | AgentContextValve | WebSocket | JakartaWebSocket | RawWebSocket | JakartaRawWebSocket |
-| ---------- | :----: | :------: | :---: | :--------------: | :---------------: | :-------: | :--------------: | :----------: | :-----------------: |
-| BES 9.5.2  |   ✔️   |    ✔️    |  ✔️   |        ✔️        |        ✔️         |    ✔️     |                  |      ✔️      |                     |
-| BES 9.5.5  |   ✔️   |    ✔️    |  ✔️   |        ✔️        |        ✔️         |    ✔️     |                  |      ✔️      |                     |
-| BES 10.x   |   ✔️   |    ✔️    |  ✔️   |        ✔️        |        ✔️         |    ✔️     |                  |      ✔️      |                     |
-| BES 11.x   |   ✔️   |    ✔️    |  ✔️   |        ✔️        |        ✔️         |           |        ✔️        |              |         ✔️          |
+| Version   | Filter | JakartaFilter | Listener | JakartaListener | Valve | JakartaValve | AgentFilterChain | AgentContextValve | WebSocket | JakartaWebSocket | RawWebSocket | JakartaRawWebSocket |
+| --------- | :----: | :-----------: | :------: | :-------------: | :---: | :----------: | :--------------: | :---------------: | :-------: | :--------------: | :----------: | :-----------------: |
+| BES 9.5.2 |   ✔️   |               |    ✔️    |                 |  ✔️   |              |        ✔️        |        ✔️         |    ✔️     |                  |      ✔️      |                     |
+| BES 9.5.5 |   ✔️   |               |    ✔️    |                 |  ✔️   |              |        ✔️        |        ✔️         |    ✔️     |                  |      ✔️      |                     |
+| BES 10.x  |   ✔️   |               |    ✔️    |                 |  ✔️   |              |        ✔️        |        ✔️         |    ✔️     |                  |      ✔️      |                     |
+| BES 11.x  |        |      ✔️       |          |       ✔️        |       |      ✔️      |        ✔️        |        ✔️         |           |        ✔️        |              |         ✔️          |
 
 <figcaption align="center">表 9：BES 各版本内存马挂载类型参考表</figcaption>
 </figure>
+</div>
+
+<style>{`
+  .bes-version-table table th:first-child,
+  .bes-version-table table td:first-child {
+    min-width: 110px;
+  }
+`}</style>
 
 BES 11 为 Jakarta 环境，Filter / Listener / Valve / WebSocket / RawWebSocket 请选择对应的 `Jakarta*` 挂载类型。
 

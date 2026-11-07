@@ -29,7 +29,7 @@ Nginx 或 CDN 默认不会转发逐跳头部 `Upgrade` 和 `Connection`，直连
 后面会握手失败；这种场景请使用 RawWebSocket。
 
 
-## RawWebSocket（Tomcat 5 ~ 11 / BES / TongWeb / Undertow / GlassFish / Payara / Jetty）
+## RawWebSocket
 
 RawWebSocket 不经过容器的 WebSocket 实现，而是由 helper 反射拿到当前 Connector 的底层连接后自己写 101
 响应、跑帧循环。shell 只认 `GET` + `Sec-WebSocket-Key`，不依赖可能被 Nginx/CDN 剥离的 `Upgrade`
@@ -42,7 +42,7 @@ helper 会按 coyote buffer 的实际类型自动选择后端，不需要事先�
 - Tomcat 8.0 的 NIO2：`SocketWrapper<Nio2Channel>` 的 Future 式 read/write；
 - Tomcat 8.5+：`SocketWrapperBase` 的阻塞 read/write，覆盖 NIO / NIO2 / APR。
 
-BES 9.5.2+ / 10 与 TongWeb 6/7/8 是改了包名的 Tomcat 分支。helper 不写死 `org.apache.*`
+BES 9.5.2+ / 10 / 11 与 TongWeb 6/7/8 是改了包名的 Tomcat 分支。helper 不写死 `org.apache.*`
 类名：ActionCode 从 `Response.action` 的形参反查，NioSelectorPool 的 read/write 按方法签名匹配，
 BIO/APR/SocketWrapper 按 buffer 字段结构识别，因此这些分支的 BIO / NIO / SocketWrapper 后端可以直接复用。
 
@@ -61,20 +61,23 @@ JBoss EAP7+ / WildFly 使用 Undertow：helper 从 servlet request/response 取�
 避免 Nginx 把 `Connection` 改成 `close` 后连接被直接回收。helper 只依赖 JDK，
 Undertow 1.x ~ 2.3.x 的 javax / Jakarta 部署共用同一份实现。
 
-GlassFish/Payara 使用 Grizzly，helper 按连接器版本接管底层 `SocketChannel`：
+GlassFish/Payara/InforSuite 使用 Grizzly，helper 按连接器版本接管底层 `SocketChannel`：
 
 - GlassFish 3 的 Grizzly 1.x：从 `com.sun.grizzly.tcp.Response.getChannel()` 取 channel，
   `suspend()` 后取消原 SelectionKey；
-- GlassFish 4+ / Payara 的 Grizzly 2.x：从 `Request.getContext().getConnection()` 取
+- GlassFish 4+ / Payara / InforSuite 的 Grizzly 2.x：从 `Request.getContext().getConnection()` 取
   `NIOConnection`，`detachSelectorRunner()` 后 `Response.suspend()`。
 
 两代 Grizzly 都在写完 101 后用自己的 Selector 跑非阻塞帧循环，容器不再回收该请求。
-GlassFish 3 ~ 8、Payara 5 ~ 7 已覆盖；Apusic/Primeton 等基于 GlassFish 二开的产品如果替换了连接器，
-需要实测。
+GlassFish 3 ~ 8、Payara 5 ~ 7、InforSuite 9/10、Apusic 10、Primeton 6.5 已覆盖。
 
 Jetty 6 ~ 12 的 RawWebSocket 从 `Request` 逐层找到 `EndPoint`，写完 101 后直接在 EndPoint 上跑
 帧循环：Jetty 6/7/8 走 `org.mortbay.io.Buffer` / `org.eclipse.jetty.io.Buffer`，Jetty 9+ 走
 `ByteBuffer`，TLS 由 Jetty 自身处理，javax / Jakarta 共用同一份 helper。
+
+Resin 3 / 4 的 RawWebSocket 在连接器层接管 socket（Resin 4 走 `startDuplex`，Resin 3 走 `upgradeProtocol`）；
+WebLogic 10.3.6 ~ 15 从 `ServletRequestImpl` 取出 `Socket` 并通过 native controls pipe 跑帧循环；
+WebSphere 7 ~ 9 直接通过连接器的 TCP 读写上下文接管 socket；Apusic 9 / 9.0.1 直接接管连接器 `SocketAdaptor` 的 `Channel`。
 
 ## 版本支持
 
@@ -87,18 +90,23 @@ RawWebSocket 不依赖容器的 WebSocket 实现。两者都要求对应容器�
 | Tomcat 7.x                         |    ✔️     |                  |      ✔️      |                     |
 | Tomcat 8.x / 9.x                   |    ✔️     |                  |      ✔️      |                     |
 | Tomcat 10.x / 11.x                 |           |       ✔️        |              |         ✔️         |
+| JBoss 4.x ~ 7.x / EAP 6.x          |           |                  |      ✔️      |                     |
 | Undertow 1.x ~ 2.2.x               |    ✔️     |                  |      ✔️      |                     |
 | Undertow 2.3.x+ / WildFly 27+      |           |       ✔️        |              |         ✔️         |
 | GlassFish 3.x                      |           |                  |      ✔️      |                     |
 | GlassFish 4.x ~ 5.x / Payara 5.x   |    ✔️     |                  |      ✔️      |                     |
 | GlassFish 6.x+ / Payara 6.x+       |           |       ✔️        |              |         ✔️         |
-| BES 9.5.1                          |    ✔️     |                  |              |                     |
+| Resin 3.x / 4.x                    |           |                  |      ✔️      |                     |
+| WebLogic 10.3.6                    |           |                  |      ✔️      |                     |
+| WebLogic 12.x / 14.x               |    ✔️     |                  |      ✔️      |                     |
+| WebLogic 15.x                      |           |       ✔️        |              |         ✔️         |
+| BES 9.5.1（选 Tomcat）             |    ✔️     |                  |      ✔️      |                     |
 | BES 9.5.2 ~ 10.x                   |    ✔️     |                  |      ✔️      |                     |
 | BES 11.x                           |           |       ✔️        |              |         ✔️         |
 | TongWeb 6.0.x                      |           |                  |      ✔️      |                     |
 | TongWeb 6.0.7 ~ 8.x                |    ✔️     |                  |      ✔️      |                     |
 | TongWeb 7.x 内嵌 Spring Boot       |           |       ✔️        |              |         ✔️         |
-| WebSphere 8.5.5.x                  |           |                  |      ✔️      |                     |
+| WebSphere 7.x / 8.5.5.x            |           |                  |      ✔️      |                     |
 | WebSphere 9.x                      |    ✔️     |                  |      ✔️      |                     |
 | Open Liberty 18+                   |    ✔️     |                  |              |                     |
 | Jetty 6.x ~ 8.x                    |           |                  |      ✔️      |                     |

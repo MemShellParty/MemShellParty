@@ -15,13 +15,13 @@ Servlet 事件监听器支持当 ServletContext、HttpSession 和 ServletRequest
 | javax.servlet.http.HttpSessionIdListener         | 在 HttpSession id 变化时                   |
 | javax.servlet.http.HttpSessionActivationListener | 在 HttpSession 激活或钝化时                |
 | javax.servlet.http.HttpSessionBindingListener    | 在 HttpSession 上对象绑定或解绑时          |
-| javax.servlet.ServletRequestListener             | 在 ServletRequest 在将要被 Web 容器处理时  |
+| javax.servlet.ServletRequestListener             | 在 ServletRequest 将要被 Web 容器处理时    |
 | javax.servlet.ServletRequestAttributeListener    | 在 ServletRequest 上添加、移除或替换属性时 |
 | javax.servlet.AsyncListener                      | 在异步操作开始、超时或完成时               |
 
 ## ServletRequestListener
 
-在编写 shell 时我们需要关注的主要就是 ServletRequestListener，在请求处理之前可以在拿到请求信息并处理（在 Filter 以及 Servlet 之前），由于它作为事件监听器的一员，并没有直接结束请求的机制，因此在对响应体重写等操作结束之后，最后还是会走到 Filter 和 Servlet 的逻辑。
+在编写 shell 时我们需要关注的主要就是 ServletRequestListener，在请求处理之前可以拿到请求信息并处理（在 Filter 以及 Servlet 之前），由于它作为事件监听器的一员，并没有直接结束请求的机制，因此在对响应体重写等操作结束之后，最后还是会走到 Filter 和 Servlet 的逻辑。
 
 ```java
 public interface ServletRequestListener extends EventListener {
@@ -38,7 +38,7 @@ public interface ServletRequestListener extends EventListener {
 }
 ```
 
-以下时使用 ServletRequestListenerShell 命令回显的代码实现。
+以下是使用 ServletRequestListenerShell 命令回显的代码实现。
 
 1. 由于此处只能拿到 ServletRequestEvent，其中只有 ServletRequest，但是一般中间件实现中，ServletRequest 中都会有能获取到 ServletResponse 的方法，因此额外新增了一个 getResponseFromRequest 方法。
 
