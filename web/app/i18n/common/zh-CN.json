@@ -105,12 +105,5 @@
   "targetJdkVersion": "JRE 版本",
   "decompile": "反编译",
   "decompiling": "正在反编译...",
-  "decompileFailed": "反编译源码失败：{{error}}",
-  "plugins.title": "已安装插件",
-  "plugins.author": "作者",
-  "plugins.homepage": "发布地址",
-  "plugins.jar": "Jar 文件",
-  "plugins.spi": "提供能力",
-  "plugins.loadFailed": "加载失败",
-  "plugins.empty": "未安装外部插件。将插件 jar 放入 plugins 目录后重启。"
+  "decompileFailed": "反编译源码失败：{{error}}"
 }

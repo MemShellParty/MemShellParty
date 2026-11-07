@@ -15,7 +15,6 @@ import {
   User,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
 import { Icons } from "@/components/icons";
@@ -53,7 +52,6 @@ type InstalledPlugin = {
 
 export default function AboutPage() {
   const theme = useTheme();
-  const { t } = useTranslation("common");
   const shadowColor = theme.theme === "dark" ? "#ffffff" : "#000000";
   const {
     data: updateInfo,
@@ -259,13 +257,11 @@ export default function AboutPage() {
           <div className="mx-auto max-w-6xl">
             <div className="mb-8 flex items-center">
               <Puzzle className="mr-3 h-6 w-6 text-primary" />
-              <h2 className="text-2xl font-bold">{t("plugins.title")}</h2>
+              <h2 className="text-2xl font-bold">Installed Plugins</h2>
             </div>
             {pluginsPending ? (
               <Card>
-                <CardContent className="p-6 text-sm text-muted-foreground">
-                  {t("loading")}
-                </CardContent>
+                <CardContent className="p-6 text-sm text-muted-foreground">Loading...</CardContent>
               </Card>
             ) : installedPlugins && installedPlugins.length > 0 ? (
               <div className="space-y-4">
@@ -275,21 +271,16 @@ export default function AboutPage() {
                       <div className="flex flex-wrap items-center gap-3">
                         <h3 className="text-lg font-semibold">{plugin.name}</h3>
                         {plugin.version && <Badge variant="secondary">v{plugin.version}</Badge>}
-                        {!plugin.loaded && (
-                          <Badge variant="destructive">{t("plugins.loadFailed")}</Badge>
-                        )}
+                        {!plugin.loaded && <Badge variant="destructive">Load failed</Badge>}
                       </div>
                       {plugin.description && (
                         <p className="mt-2 text-sm text-muted-foreground">{plugin.description}</p>
                       )}
                       <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-                        <PluginInfoRow label={t("plugins.author")} value={plugin.author} />
-                        <PluginInfoRow label={t("plugins.homepage")} value={plugin.homepage} />
-                        <PluginInfoRow label={t("plugins.jar")} value={plugin.jarFileName} />
-                        <PluginInfoRow
-                          label={t("plugins.spi")}
-                          value={plugin.spiServices?.join(", ")}
-                        />
+                        <PluginInfoRow label="Author" value={plugin.author} />
+                        <PluginInfoRow label="Homepage" value={plugin.homepage} />
+                        <PluginInfoRow label="Jar File" value={plugin.jarFileName} />
+                        <PluginInfoRow label="Provides" value={plugin.spiServices?.join(", ")} />
                       </div>
                       {plugin.loadError && (
                         <p className="mt-3 text-sm text-destructive">{plugin.loadError}</p>
@@ -301,7 +292,8 @@ export default function AboutPage() {
             ) : (
               <Card>
                 <CardContent className="p-6 text-sm text-muted-foreground">
-                  {t("plugins.empty")}
+                  No external plugins installed. Place plugin jars in the plugins directory and
+                  restart.
                 </CardContent>
               </Card>
             )}
