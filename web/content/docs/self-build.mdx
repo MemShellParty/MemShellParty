@@ -28,15 +28,15 @@ bun run build
 3. 构建后端项目，确保使用 JDK17 环境
 
 ```bash
-cd MemShellParty
+cd ..
 
-./gradlew :memshell-party-boot:bootjar -x test
+./gradlew :memshell-party-boot:bootJar -x test
 ```
 
 构建完之后，可直接启动 jar 包，jar 包位于 `MemShellParty/memshell-party-boot/build/libs/memshell-party-boot-*.jar`
 
 ```bash
-cd MemShellParty/memshell-party-boot
+cd memshell-party-boot
 
 java -jar \
      --add-opens=java.base/java.util=ALL-UNNAMED \
@@ -45,11 +45,9 @@ java -jar \
      build/libs/memshell-party-boot-*.jar
 ```
 
-也可这基础上再继续构建容器来使用
+也可在此基础上再继续构建容器来使用
 
 ```bash
-cd MemShellParty/memshell-party-boot
-
 docker buildx build -t memshell-party:latest . --load
 
 docker run -it -d --name memshell-party -p 8080:8080 memshell-party:latest

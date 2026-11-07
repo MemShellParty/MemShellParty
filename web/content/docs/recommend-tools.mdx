@@ -112,7 +112,7 @@ classloader 用来查看类加载器信息。
 - `classloader -t` 查看类加载器继承关系
 - `classloader -c <hash>` 指定类加载实例 hash 查看其 urls
 
-![arhtas_classloader](./images/arthas_classloader.png)
+![arthas_classloader](./images/arthas_classloader.png)
 
 此处的分析将会在 Java 基础中提及，有些 ClassNotFoundException 或 ClassCastException 可以通过此种方式找到问题所在。
 
@@ -152,17 +152,17 @@ Arthas Server is going to shutdown...
 
 ## File Expander — IDEA 插件
 
-IDEA 自带反编译功能，并且使用习惯之后也是相当好用。但是有一个问题，如果 jar 包中套 jar 包，那么里面的 jar 包并不会默认展开，自然想到的办法就是解压 一次 jar，把里面的东西弄出来，但是有了 File Expander 插件之后，无论是 zip 还是 jar in jar，都轻松查看了。
+IDEA 自带反编译功能，并且使用习惯之后也是相当好用。但是有一个问题，如果 jar 包中套 jar 包，那么里面的 jar 包并不会默认展开，自然想到的办法就是解压一次 jar，把里面的东西弄出来，但是有了 File Expander 插件之后，无论是 zip 还是 jar in jar，都轻松查看了。
 
 ![idea_plugins](./images/idea_plugins.png)
 
-下图演示了 java-chains-1.4.0.jar，直接可以 expand 到 chains-core，开学！！！，这种情况下不比 jadx 要好用。
+下图演示了 java-chains-1.4.0.jar，直接可以 expand 到 chains-core，开心！！！这种情况下比 jadx 要好用。
 
 ![idea_javachains](./images/idea_javachains.png)
 
 ## Find 命令
 
-在批量查找当前目录下某个类存在于那个 jar 文件中，需要使用到 find 命令协助，由于需要用到 jar 命令，因此依赖 JDK 环境。JRE 环境下，可以将文件打包发送到 JDK 环境再继续研究。
+在批量查找当前目录下某个类存在于哪个 jar 文件中，需要使用到 find 命令协助，由于需要用到 jar 命令，因此依赖 JDK 环境。JRE 环境下，可以将文件打包发送到 JDK 环境再继续研究。
 
 在 tomcat 目录下，找到 ApplicationContext 在哪个 jar 文件中。
 

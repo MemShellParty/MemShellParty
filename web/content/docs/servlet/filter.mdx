@@ -12,7 +12,7 @@ Filter 可以选择应用的 url-pattern 或 servlet-name，以下两种方式�
 
 ```xml
 <filter-mapping>
-    <filter-name>Multipe Mappings Filter</filter-name>
+    <filter-name>Multiple Mappings Filter</filter-name>
     <url-pattern>/foo/*</url-pattern>
     <servlet-name>Servlet1</servlet-name>
     <servlet-name>Servlet2</servlet-name>
@@ -22,11 +22,11 @@ Filter 可以选择应用的 url-pattern 或 servlet-name，以下两种方式�
 
 ```java
 @WebFilter(
-        filterName = "Multipe Mappings Filter",
+        filterName = "Multiple Mappings Filter",
         urlPatterns = {"/foo/*", "/bar/*"},
         servletNames = {"Servlet1", "Servlet2"}
 )
-public class MultipeMappingsFilter implements Filter {
+public class MultipleMappingsFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         // TODO
@@ -51,7 +51,7 @@ public interface Filter {
      * 由 Web 容器在初始化 Filter 时调用。
      */
     public void init(FilterConfig filterConfig) throws ServletException;
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)throws IOException, ServletException;
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException;
     /**
      * 由 Web 容器在卸载 Filter 时调用。
      */
