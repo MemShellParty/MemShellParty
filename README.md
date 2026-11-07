@@ -90,7 +90,7 @@ docker run --pull=always --rm -it -d -p 8080:8080 --name memshell-party ghcr.nju
 java -jar memshell-party-gui-x.y.z.jar
 ```
 
-boot 与桌面完整发行版也支持外置 SPI 插件：将实现 `ServerProvider`、`ShellToolProvider`、`Packer` 的 fat jar 放到启动 jar 同级的 `plugins/`，重启后即可在 REST、MCP 和桌面端使用。构建方式、目录覆盖参数与限制见[插件示例](memshell-party-examples/memshell-party-example-plugin/README.md)。
+boot 与桌面完整发行版也支持外置 SPI 插件：将实现 `ServerProvider`、`ShellToolProvider`、`Packer` 的 fat jar 放到启动 jar 同级的 `plugins/`，重启后即可在 REST、MCP 和桌面端使用。插件 jar 可选提供 `META-INF/memshell-party-plugin.properties` 描述名称、版本、作者与发布地址，Web 与桌面端的「关于」会显示只读列表（`GET /api/plugins`）。构建方式、目录覆盖参数与限制见[插件示例](memshell-party-examples/memshell-party-example-plugin/README.md)。
 
 ### Woodpecker 插件
 

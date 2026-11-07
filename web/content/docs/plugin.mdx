@@ -307,3 +307,28 @@ META-INF/services/com.reajason.javaweb.packer.Packer
 
 `Server`、`ShellType`、`ShellTool`、`Packers` 只是字符串常量表；自定义注册名不在其中，自己维护常量即可。
 生成端、REST/MCP 与 GUI 只按字符串匹配。
+
+### 插件元信息与只读列表
+
+插件 jar 可以额外提供 `META-INF/memshell-party-plugin.properties`，供 Web「关于」页和桌面端「关于」
+弹窗展示名称、版本、作者、描述、发布地址等信息：
+
+```properties
+name=Example Plugin
+version=1.0.0
+author=Example Author
+description=示例 server / shellTool / packer 插件
+homepage=https://github.com/example/example-plugin
+license=MIT
+source=https://github.com/example/example-plugin
+```
+
+全部字段可选。描述符按 UTF-8 读取；缺失字段依次回退到 `MANIFEST.MF` 的 `Implementation-Title` /
+`Implementation-Version` / `Implementation-Vendor` / `Implementation-URL`，名称最后回退到 jar 文件名。
+描述符损坏只会记录警告，不会阻止插件本身的加载。
+
+列表是只读的，不提供安装、卸载、启用或禁用操作；新增、替换、删除插件仍然需要重启。元信息由插件自行
+声明，宿主不做签名或可信校验，不要把它当作权限依据，也不要在展示层自动请求其中的 URL。
+
+boot 暴露 `GET /api/plugins`，返回本次启动扫描到的插件描述（包含加载失败的 jar）；没有调用过
+`PluginBootstrap.load()` 的嵌入式宿主返回空列表。

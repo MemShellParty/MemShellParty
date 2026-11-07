@@ -14,6 +14,7 @@ import com.reajason.javaweb.desktop.memshell.util.AppVersion;
 import com.reajason.javaweb.desktop.memshell.util.SafetyDisclaimer;
 import com.reajason.javaweb.desktop.memshell.util.StatusReporter;
 import com.reajason.javaweb.desktop.memshell.util.SwingUiUtil;
+import com.reajason.javaweb.memshell.PluginDescriptor;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.BorderFactory;
@@ -70,6 +71,8 @@ public class MemShellDesktopFrame extends JFrame {
     private final MemShellGeneratorFrame memShellFrame;
     private final ProbeGeneratorFrame probeFrame;
     private final DecompileFrame decompileFrame;
+    /** 启动期扫描到的外置插件元信息，只用于「关于」里的只读列表。 */
+    private final List<PluginDescriptor> plugins;
     private final JTabbedPane pageTabs = new JTabbedPane();
     private final JLabel statusLabel = new JLabel("就绪");
     /** 每页一份状态文案：切页只换显示，不丢别的页报过的消息。 */
@@ -79,7 +82,12 @@ public class MemShellDesktopFrame extends JFrame {
     private AboutDialog aboutDialog;
 
     public MemShellDesktopFrame(List<GuiExtension> extensions) {
+        this(extensions, Collections.<PluginDescriptor>emptyList());
+    }
+
+    public MemShellDesktopFrame(List<GuiExtension> extensions, List<PluginDescriptor> plugins) {
         super(MemShellGui.applicationTitle(extensions, "MemShellParty v" + AppVersion.get()));
+        this.plugins = plugins == null ? Collections.<PluginDescriptor>emptyList() : plugins;
         // standalone = false：三个页面只出界面，窗口属性归这个外壳
         this.memShellFrame = new MemShellGeneratorFrame(extensions, false);
         this.probeFrame = new ProbeGeneratorFrame(false);
@@ -114,13 +122,21 @@ public class MemShellDesktopFrame extends JFrame {
      * 安装 FlatLaf 并显示窗口：完整发行版的入口。
      */
     public static void launch() {
-        launch(Collections.emptyList());
+        launch(Collections.<String>emptyList());
     }
 
     /**
      * @param pluginWarnings 已在启动日志中保留完整详情的插件诊断
      */
     public static void launch(final List<String> pluginWarnings) {
+        launch(pluginWarnings, Collections.<PluginDescriptor>emptyList());
+    }
+
+    /**
+     * @param pluginWarnings 已在启动日志中保留完整详情的插件诊断
+     * @param plugins        启动期扫描到的插件元信息，只用于「关于」里的只读列表
+     */
+    public static void launch(final List<String> pluginWarnings, final List<PluginDescriptor> plugins) {
         // macOS 未打包 JVM 参数时让 Dock/菜单栏显示应用名
         if (System.getProperty("apple.awt.application.name") == null) {
             System.setProperty("apple.awt.application.name", "MemShellParty");
@@ -130,7 +146,7 @@ public class MemShellDesktopFrame extends JFrame {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                MemShellDesktopFrame frame = new MemShellDesktopFrame(extensions);
+                MemShellDesktopFrame frame = new MemShellDesktopFrame(extensions, plugins);
                 frame.setVisible(true);
                 if (!pluginWarnings.isEmpty()) {
                     JOptionPane.showMessageDialog(frame,
@@ -211,7 +227,7 @@ public class MemShellDesktopFrame extends JFrame {
      */
     private void showAboutDialog() {
         if (aboutDialog == null) {
-            aboutDialog = new AboutDialog(this);
+            aboutDialog = new AboutDialog(this, plugins);
         }
         aboutDialog.setLocationRelativeTo(this);
         aboutDialog.setVisible(true);

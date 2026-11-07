@@ -19,6 +19,6 @@ public class MemShellDesktopApplication {
             System.err.println("插件加载警告: " + warning);
         }
         // 核心 SPI 已完成预热并恢复 TCCL；此处只发现宿主自身的 GuiExtension。
-        MemShellDesktopFrame.launch(plugins.getWarnings());
+        MemShellDesktopFrame.launch(plugins.getWarnings(), plugins.getPlugins());
     }
 }

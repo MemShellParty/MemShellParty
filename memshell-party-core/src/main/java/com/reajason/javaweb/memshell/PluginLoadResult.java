@@ -11,11 +11,14 @@ import java.util.List;
 public final class PluginLoadResult {
     private final Path directory;
     private final List<Path> pluginJars;
+    private final List<PluginDescriptor> plugins;
     private final List<String> warnings;
 
-    PluginLoadResult(Path directory, List<Path> pluginJars, List<String> warnings) {
+    PluginLoadResult(Path directory, List<Path> pluginJars, List<PluginDescriptor> plugins,
+                     List<String> warnings) {
         this.directory = directory;
         this.pluginJars = Collections.unmodifiableList(new ArrayList<>(pluginJars));
+        this.plugins = Collections.unmodifiableList(new ArrayList<>(plugins));
         this.warnings = Collections.unmodifiableList(new ArrayList<>(warnings));
     }
 
@@ -25,6 +28,14 @@ public final class PluginLoadResult {
 
     public List<Path> getPluginJars() {
         return pluginJars;
+    }
+
+    /**
+     * 本次扫描到的插件元信息。包含加载失败的 jar，按 jar 文件名排序；
+     * 不是插件（没有已知 SPI 也没有描述符）的普通 jar 不会出现在这里。
+     */
+    public List<PluginDescriptor> getPlugins() {
+        return plugins;
     }
 
     public List<String> getWarnings() {

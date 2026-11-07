@@ -28,6 +28,24 @@ java -Dmemshell.plugins.dir=/path/to/plugins -jar memshell-party-boot-x.y.z.jar
 MEMSHELL_PLUGINS_DIR=/path/to/plugins java -jar memshell-party-gui-x.y.z.jar
 ```
 
+## 插件元信息
+
+jar 内可放 `META-INF/memshell-party-plugin.properties`，Web「关于」页和桌面端「关于」弹窗会显示只读插件列表：
+
+```properties
+name=Example Plugin
+version=1.0.0
+author=Example Author
+description=示例 server / shellTool / packer 插件
+homepage=https://github.com/example/example-plugin
+license=MIT
+source=https://github.com/example/example-plugin
+```
+
+字段全部可选。描述符按 UTF-8 读取；缺失字段依次回退到 `MANIFEST.MF` 的 `Implementation-Title` / `Implementation-Version` /
+`Implementation-Vendor` / `Implementation-URL`，名称最后回退到 jar 文件名。描述符损坏只记录警告，不阻止插件加载。
+元信息由插件自行声明，宿主不做签名校验，仅用于展示；列表不提供安装、卸载、启用或禁用操作，变更插件仍需重启。
+
 ## 编写插件
 
 - 宿主提供的 `memshell-party-api`、`memshell-party-core` 使用 `compileOnly`，不要打入插件。

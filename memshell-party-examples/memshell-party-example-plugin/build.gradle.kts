@@ -29,6 +29,15 @@ tasks.jar {
     archiveClassifier.set("plain")
 }
 
+tasks.processResources {
+    // 插件描述符只有一个模板值 ${version}；配置期先取值，避免破坏配置缓存。
+    val resourceVersion = project.version.toString()
+    inputs.property("pluginVersion", resourceVersion)
+    filesMatching("META-INF/memshell-party-plugin.properties") {
+        expand("version" to resourceVersion)
+    }
+}
+
 tasks.shadowJar {
     archiveBaseName.set("memshell-party-example-plugin")
     archiveClassifier.set("")
