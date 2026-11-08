@@ -1,7 +1,7 @@
 ---
 title: SDK 集成
 icon: BrainCircuit
-description: 3.0.0 接入指南：按需组合生成引擎、server 与 shell 工具模块，调用生成、查询、打包与探测 API
+description: 3.1.0 接入指南：按需组合生成引擎、server 与 shell 工具模块，调用生成、查询、打包与探测 API
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
@@ -29,7 +29,9 @@ Resin、WebLogic、WebSphere、GlassFish、TongWeb、BES、InforSuite、Apusic�
 `memshell-party-server-servlet` 提供，不再按容器拆分模块。
 `server-all` 和 `shelltool-all` 是聚合 BOM；Gradle 使用 `platform(...)` 引入，同时仍会带入全部对应 provider。
 
-通过 BOM 统一管理模块版本。api、common、core、gui-sdk 与聚合模块跟随 BOM 版本；packer、各 server、shelltool 和签名桩使用独立版本。
+通过 BOM 统一管理模块版本：BOM 跟随发行版版本，其余模块各自维护独立基线。本次发布 3.1.0 的是
+`api`、`core`、`packer`、`server-servlet`、`server-all`、`shelltool-all`、`shelltool-command`；
+未变化的模块保持 3.0.0。
 
 <Tabs items={["Maven", "Gradle"]}>
   <Tab>
@@ -39,7 +41,7 @@ Resin、WebLogic、WebSphere、GlassFish、TongWeb、BES、InforSuite、Apusic�
         <dependency>
           <groupId>io.github.reajason</groupId>
           <artifactId>memshell-party-bom</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.0</version>
           <type>pom</type>
           <scope>import</scope>
         </dependency>
@@ -70,7 +72,7 @@ Resin、WebLogic、WebSphere、GlassFish、TongWeb、BES、InforSuite、Apusic�
   </Tab>
   <Tab>
     ```groovy
-    implementation platform('io.github.reajason:memshell-party-bom:3.0.0')
+    implementation platform('io.github.reajason:memshell-party-bom:3.1.0')
     implementation 'io.github.reajason:memshell-party-core'
     implementation 'io.github.reajason:memshell-party-server-servlet'
     implementation 'io.github.reajason:memshell-party-shelltool-godzilla'
@@ -88,13 +90,13 @@ Maven 需要引入全部 provider 时，将聚合 BOM 声明为普通 `pom` 类�
   <dependency>
     <groupId>io.github.reajason</groupId>
     <artifactId>memshell-party-server-all</artifactId>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
     <type>pom</type>
   </dependency>
   <dependency>
     <groupId>io.github.reajason</groupId>
     <artifactId>memshell-party-shelltool-all</artifactId>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
     <type>pom</type>
   </dependency>
 </dependencies>
@@ -266,8 +268,9 @@ System.out.println(result.getShellClassName());
 与 `GuiExtension`；server 与内置工具不随 SDK 走。
 
 ```groovy
-implementation 'io.github.reajason:memshell-party-gui-sdk:3.0.0'
-implementation 'io.github.reajason:memshell-party-server-servlet:3.0.0'
+implementation platform('io.github.reajason:memshell-party-bom:3.1.0')
+implementation 'io.github.reajason:memshell-party-gui-sdk'
+implementation 'io.github.reajason:memshell-party-server-servlet'
 ```
 
 ```java
@@ -293,7 +296,7 @@ MemShellGui.createMemShellFrame().setVisible(true);
 否则真身会被桩遮蔽：
 
 ```groovy
-testImplementation('io.github.reajason:memshell-party-server-servlet:3.0.0') {
+testImplementation('io.github.reajason:memshell-party-server-servlet:3.1.0') {
     exclude group: 'io.github.reajason', module: 'memshell-party-stub-tomcat'
     // 使用真实 Jetty 时还要排除 'memshell-party-stub-jetty'
 }
