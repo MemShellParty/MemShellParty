@@ -39,4 +39,12 @@ public class Tomcat5ContainerTest extends AbstractProbeContainerTest {
     protected void testJDK() {
         doTestJDK();
     }
+
+    // 同上：注入 POST 偶发拿不到 data（req.getParameter 为 null）返回 500，内存马没装上；
+    // 重试可恢复，与 Tomcat7 的处理一致。
+    @Override
+    @RetryingTest(3)
+    protected void testFilterFirstInject() {
+        super.testFilterFirstInject();
+    }
 }
