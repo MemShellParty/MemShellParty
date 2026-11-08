@@ -25,6 +25,10 @@ COPY --from=source /usr/src/web /usr/src/web
 
 RUN bun run build
 
+# Gradle 发行版随官方镜像提供：services.gradle.org 会 307 到 GitHub Releases，
+# 构建时在线下载偶发 504/超时。版本需与 gradle/wrapper/gradle-wrapper.properties 一致。
+FROM --platform=$BUILDPLATFORM gradle:8.14.6-jdk21 AS gradle-dist
+
 # https://hub.docker.com/_/eclipse-temurin/tags?name=21.
 FROM --platform=$BUILDPLATFORM  eclipse-temurin:21.0.12_8-jdk-noble AS backend
 
@@ -32,9 +36,11 @@ WORKDIR /usr/src
 
 COPY --from=source /usr/src /usr/src
 
+COPY --from=gradle-dist /opt/gradle /opt/gradle
+
 COPY --from=frontend /usr/src/memshell-party-boot/src/main/resources /usr/src/memshell-party-boot/src/main/resources
 
-RUN ./gradlew :memshell-party-boot:bootjar -x test
+RUN /opt/gradle/bin/gradle :memshell-party-boot:bootjar -x test
 
 FROM eclipse-temurin:21.0.12_8-jre-noble
 
