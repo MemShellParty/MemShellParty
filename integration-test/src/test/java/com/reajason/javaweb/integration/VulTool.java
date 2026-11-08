@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.util.Base64;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -17,11 +18,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Slf4j
 public class VulTool {
 
+    /**
+     * CI runner 上的老旧服务器（WebLogic 10.3.6 等）类定义 + 静态初始化可能超过 OkHttp 默认的
+     * 10s 读超时（SocketTimeoutException），显式放宽到 60s。
+     */
+    private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build();
+
     @SneakyThrows
     public static void urlIsOk(String url) {
         Request request = new Request.Builder()
                 .url(url).build();
-        try (Response response = new OkHttpClient().newCall(request).execute()) {
+        try (Response response = CLIENT.newCall(request).execute()) {
             System.out.println(response.body().string());
             Assertions.assertTrue(response.isSuccessful());
         }
@@ -40,7 +51,7 @@ public class VulTool {
                 .url(uploadUrl).post(requestBody)
                 .header("Referer", uploadUrl)
                 .build();
-        try (Response response = new OkHttpClient().newCall(request).execute()) {
+        try (Response response = CLIENT.newCall(request).execute()) {
             System.out.println(response.body().string());
             assertEquals(200, response.code());
         }
@@ -65,7 +76,7 @@ public class VulTool {
                 .header("Referer", uploadUrl)
                 .url(uploadUrl).post(requestBody)
                 .build();
-        try (Response response = new OkHttpClient().newCall(request).execute()) {
+        try (Response response = CLIENT.newCall(request).execute()) {
             String res = response.body().string();
             System.out.println(res);
             Assertions.assertNotEquals(404, response.code());
@@ -83,7 +94,7 @@ public class VulTool {
                 .header("Referer", uploadUrl)
                 .url(uploadUrl).post(requestBody)
                 .build();
-        try (Response response = new OkHttpClient().newCall(request).execute()) {
+        try (Response response = CLIENT.newCall(request).execute()) {
             return response.body().string();
         }
     }
@@ -91,7 +102,7 @@ public class VulTool {
     @SneakyThrows
     public static void xxlJobHessianExecutor(String url, String base64Bytes) {
         byte[] requestBytes = Base64.getDecoder().decode(base64Bytes);
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = CLIENT;
         RequestBody body = RequestBody.create(requestBytes, MediaType.parse("application/octet-stream"));
         Request request = new Request.Builder()
                 .url(url)
@@ -107,7 +118,7 @@ public class VulTool {
 
     @SneakyThrows
     public static void xxlJobExecutor(String url, String data) {
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = CLIENT;
         log.info(data);
         RequestBody body = RequestBody.create(data, MediaType.parse("application/json"));
         Request request = new Request.Builder()
