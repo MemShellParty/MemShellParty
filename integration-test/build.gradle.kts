@@ -156,3 +156,36 @@ tasks.register<Test>("dubboContainerTest") {
     }
     configureIntegrationJvm()
 }
+
+// 临时的一次性 WsHelper 全容器校验。独立源码集，不挂到 test/check，
+// 因此不会进入 CI 的集成测试矩阵；需要用 wsHelperVerification 显式触发。
+val wsHelperVerificationSourceSet = sourceSets.create("wsHelperVerification") {
+    java.srcDir("src/ws-helper-verification/java")
+    resources.srcDir("src/ws-helper-verification/resources")
+    compileClasspath = compileClasspath + sourceSets.test.get().output + configurations.testRuntimeClasspath.get()
+    runtimeClasspath = output + compileClasspath
+}
+
+tasks.register<Test>("wsHelperVerification") {
+    group = "verification"
+    description = "Runs the one-off real-container WsHelper verification (not part of CI)."
+    testClassesDirs = wsHelperVerificationSourceSet.output.classesDirs
+    classpath = wsHelperVerificationSourceSet.runtimeClasspath
+    useJUnitPlatform()
+    maxParallelForks = 1
+    systemProperty("junit.jupiter.execution.parallel.enabled", "false")
+    systemProperty("wsverify.profiles", providers.gradleProperty("wsProfiles").getOrElse(""))
+    // 同一 shell 端点上重复建连/用/关的轮数，默认 10；临时加压时传 -PwsCycles=50
+    systemProperty("wsverify.cycles", providers.gradleProperty("wsCycles").getOrElse("10"))
+    jvmArgs(
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        "--add-opens=java.xml/com.sun.org.apache.xalan.internal.xsltc.trax=ALL-UNNAMED",
+        "--add-opens=java.xml/com.sun.org.apache.xalan.internal.xsltc.runtime=ALL-UNNAMED"
+    )
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+    outputs.upToDateWhen { false }
+}
