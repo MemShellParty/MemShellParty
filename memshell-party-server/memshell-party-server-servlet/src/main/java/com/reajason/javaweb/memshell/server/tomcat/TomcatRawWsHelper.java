@@ -457,7 +457,14 @@ public class TomcatRawWsHelper implements Runnable {
 
     private int readWireDirect(byte[] buffer, int offset, int length) throws IOException {
         if (wireMode == MODE_BIO) {
-            return input.read(buffer, offset, length);
+            // Tomcat 5/6/7/8.0 的 BIO 连接器会给 socket 设置 SO_TIMEOUT（默认 20000ms），
+            // 空闲到点后 read 抛 SocketTimeoutException。这里按"本轮无数据"返回 0，
+            // 让上层循环回到 while (!closed) 继续轮询，避免空闲会话被静默掐断。
+            try {
+                return input.read(buffer, offset, length);
+            } catch (SocketTimeoutException e) {
+                return closed ? -1 : 0;
+            }
         }
         if (wireMode == MODE_WRAPPER) {
             return readWrapper(buffer, offset, length);

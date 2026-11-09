@@ -303,17 +303,44 @@ public class ApusicRawWsHelper implements Runnable {
             return selector;
         }
         selector = Selector.open();
+        // 先发布再 register：closeConnection 与本方法可能在不同线程并发执行，
+        // 若 register 成功后才发布，关闭线程会读到 null 只关 channel，
+        // 这里的 Selector（epoll fd + wakeup pipe）就再也没人关闭。
+        readSelector = selector;
         try {
             channel.register(selector, SelectionKey.OP_READ);
         } catch (Throwable t) {
-            selector.close();
+            clearReadSelector(selector);
+            closeQuietly(selector);
+            if (closed) {
+                throw new IOException("connection closed");
+            }
             if (t instanceof IOException) {
                 throw (IOException) t;
             }
             throw new IOException("register failed: " + t);
         }
-        readSelector = selector;
+        // register 期间关闭线程可能已经把 closed 置位；此时它要么已关闭 selector，
+        // 要么看到的是已发布字段并关闭，这里复查一次兜住"读到 null 后才发布"的窗口。
+        if (closed) {
+            clearReadSelector(selector);
+            closeQuietly(selector);
+            throw new IOException("connection closed");
+        }
         return selector;
+    }
+
+    private void clearReadSelector(Selector selector) {
+        if (readSelector == selector) {
+            readSelector = null;
+        }
+    }
+
+    private void closeQuietly(Selector selector) {
+        try {
+            selector.close();
+        } catch (Throwable ignored) {
+        }
     }
 
     private void writeWire(byte[] data, int offset, int length) throws IOException {
