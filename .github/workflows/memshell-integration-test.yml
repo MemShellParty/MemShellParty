@@ -94,6 +94,8 @@ jobs:
             parallelism: 1
             depend_tasks: ":vul:vul-dubbo:dubboProviderFatJars :tools:command:dubboClientClasspath"
     runs-on: ubuntu-22.04
+    # 正常 5–15 分钟；挂起时不再占满 GitHub 默认的 6 小时，而是 45 分钟后明确失败
+    timeout-minutes: 45
     name: ${{ matrix.cases.middleware }}
     steps:
       - name: Checkout
