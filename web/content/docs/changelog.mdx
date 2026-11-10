@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v3.1.0](https://github.com/MemShellParty/MemShellParty/releases/tag/v3.1.0) - 2026-11-08
+## [v3.1.0](https://github.com/MemShellParty/MemShellParty/releases/tag/v3.1.0) - 2026-11-10
 
 ### Added
 
@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 1. 修复 Tomcat 冷 processor 场景下 Command upgrade 回调在 `CoyoteAdapter.service` 之前执行、note 1 中没有 Catalina Request/Response 导致无法取参：按 CoyoteAdapter 的方式补建并回写，兼容 Tomcat 8.5 ~ 11
+2. 修复 Tomcat 5/6/7/8.0 BIO 模式下 RawWebSocket 空闲读取超时导致会话断开
+3. 修复 Apusic / GlassFish RawWebSocket 并发关闭连接时 Selector 未释放造成的文件描述符泄漏
+4. 修复 Docker 构建因 Gradle 发行版下载超时或失败而中断，改为从官方 Gradle 镜像复制对应版本
 
 ### Changed
 
@@ -27,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - 新增 `memshell-party-bom` 统一管理模块版本，模块改为独立基线发布；
    - `memshell-party-server-all` / `memshell-party-shelltool-all` 改为 POM-only 聚合 platform，Gradle 用 `platform(...)`、Maven 用 `<type>pom</type>` 引入；
    - `memshell-party-fileless` 并入 `memshell-party-packer`，运行时包名为 `com.reajason.javaweb.packer.jar.agent.fileless`；
-2(WEB) 工具下拉默认选中排序后的第一项；
+2. (WEB) 工具下拉默认选中排序后的第一项
 
 **Full Changelog:** [v3.0.0...v3.1.0](https://github.com/MemShellParty/MemShellParty/compare/v3.0.0...v3.1.0)
 
