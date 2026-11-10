@@ -6,7 +6,7 @@
 <div align="center">
 
 [![release](https://img.shields.io/github/v/release/MemShellParty/MemShellParty?label=Release&style=flat-square)](https://github.com/MemShellParty/MemShellParty/releases)
-[![MavenCentral](https://img.shields.io/maven-central/v/io.github.reajason/generator?label=MavenCentral&style=flat-square)](https://central.sonatype.com/artifact/io.github.reajason/generator)
+[![MavenCentral](https://img.shields.io/maven-central/v/io.github.reajason/memshell-party-bom?label=MavenCentral&style=flat-square)](https://central.sonatype.com/artifact/io.github.reajason/memshell-party-bom)
 [![docker-pulls](https://img.shields.io/docker/pulls/reajason/memshell-party?label=DockerHub%20Pulls&style=flat-square)](https://hub.docker.com/r/reajason/memshell-party)
 </div>
 <div align="center">
