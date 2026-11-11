@@ -199,6 +199,219 @@ class PluginBootstrapTest {
         assertTrue(result.getWarnings().stream().anyMatch(message -> message.contains("读取插件描述失败")));
     }
 
+    @Test
+    void validationAcceptsCompletePlugin() throws Exception {
+        createValidationJar("valid.jar", "fixture.v.FixtureInjector", validInjectorSource(),
+                "fixture.v.FixtureShell");
+
+        PluginValidationReport report = PluginBootstrap.validate(tempDir, getClass().getClassLoader());
+
+        assertTrue(report.isValid(), report.getErrors().toString());
+        assertFalse(report.hasWarnings(), report.getWarnings().toString());
+        assertEquals(1, report.getPluginJars().size());
+        // 校验只读：不能把 provider 注册进进程内注册表
+        assertFalse(MemShellRegistry.getInstance().getSupportedServers().contains("ValidationServer"));
+    }
+
+    @Test
+    void validationReportsMissingInjectorTemplate() throws Exception {
+        createValidationJar("missing-injector.jar", "fixture.v.MissingInjector", validInjectorSource(),
+                "fixture.v.FixtureShell");
+
+        PluginValidationReport report = PluginBootstrap.validate(tempDir, getClass().getClassLoader());
+
+        assertFalse(report.isValid());
+        assertTrue(report.getErrors().stream().anyMatch(message -> message.contains("注入器模板不存在")),
+                report.getErrors().toString());
+    }
+
+    @Test
+    void validationReportsMissingShellTemplate() throws Exception {
+        createValidationJar("missing-shell.jar", "fixture.v.FixtureInjector", validInjectorSource(),
+                "fixture.v.MissingShell");
+
+        PluginValidationReport report = PluginBootstrap.validate(tempDir, getClass().getClassLoader());
+
+        assertFalse(report.isValid());
+        assertTrue(report.getErrors().stream().anyMatch(message -> message.contains("shell 模板不存在")),
+                report.getErrors().toString());
+    }
+
+    @Test
+    void validationReportsInjectorContractViolation() throws Exception {
+        String incompleteInjector = "package fixture.v;\n"
+                + "public class FixtureInjector {\n"
+                + "  public String getClassName() { return \"x\"; }\n"
+                + "}\n";
+        createValidationJar("contract.jar", "fixture.v.FixtureInjector", incompleteInjector,
+                "fixture.v.FixtureShell");
+
+        PluginValidationReport report = PluginBootstrap.validate(tempDir, getClass().getClassLoader());
+
+        assertFalse(report.isValid());
+        assertTrue(report.getErrors().stream().anyMatch(message -> message.contains("getBase64String")),
+                report.getErrors().toString());
+    }
+
+    @Test
+    void validationAcceptsServerToolMappingOverride() throws Exception {
+        createValidationJar("override.jar", "fixture.v.FixtureInjector", validInjectorSource(),
+                "fixture.v.FixtureShell", "fixture.v.FixtureShell", true);
+
+        PluginValidationReport report = PluginBootstrap.validate(tempDir, getClass().getClassLoader());
+
+        assertTrue(report.isValid(), report.getErrors().toString());
+    }
+
+    @Test
+    void validationReportsMissingOverrideShellTemplate() throws Exception {
+        createValidationJar("override-missing-shell.jar", "fixture.v.FixtureInjector", validInjectorSource(),
+                "fixture.v.FixtureShell", "fixture.v.MissingShell", true);
+
+        PluginValidationReport report = PluginBootstrap.validate(tempDir, getClass().getClassLoader());
+
+        assertFalse(report.isValid());
+        assertTrue(report.getErrors().stream().anyMatch(message -> message.contains("覆盖的 shell 模板不存在")),
+                report.getErrors().toString());
+    }
+
+    @Test
+    void validationReportsOverrideWithoutInjector() throws Exception {
+        createValidationJar("override-no-injector.jar", "fixture.v.FixtureInjector", validInjectorSource(),
+                "fixture.v.FixtureShell", "fixture.v.FixtureShell", false);
+
+        PluginValidationReport report = PluginBootstrap.validate(tempDir, getClass().getClassLoader());
+
+        assertFalse(report.isValid());
+        assertTrue(report.getErrors().stream().anyMatch(message -> message.contains("覆盖的 shellType 没有注入器")),
+                report.getErrors().toString());
+    }
+
+    @Test
+    void validationReportsMalformedServiceEntry() throws Exception {
+        Path jar = tempDir.resolve("bad-entry.jar");
+        try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jar))) {
+            addService(output, "com.reajason.javaweb.memshell.spi.ServerProvider", "not a class name");
+        }
+
+        PluginValidationReport report = PluginBootstrap.validate(tempDir, getClass().getClassLoader());
+
+        assertFalse(report.isValid());
+        assertTrue(report.getErrors().stream().anyMatch(message -> message.contains("无效 SPI 实现类名")),
+                report.getErrors().toString());
+    }
+
+    @Test
+    void validationOfMissingDirectoryIsValid() {
+        PluginValidationReport report = PluginBootstrap.validate(
+                tempDir.resolve("absent"), getClass().getClassLoader());
+
+        assertTrue(report.isValid(), report.getErrors().toString());
+        assertTrue(report.getPluginJars().isEmpty());
+    }
+
+    private void createValidationJar(String jarName, String injectorClassName, String injectorSource,
+                                     String shellClassName) throws Exception {
+        createValidationJar(jarName, injectorClassName, injectorSource, shellClassName, null, false);
+    }
+
+    private void createValidationJar(String jarName, String injectorClassName, String injectorSource,
+                                     String shellClassName, String overrideShellClassName,
+                                     boolean declareOverrideInjector) throws Exception {
+        Path sourceRoot = tempDir.resolve(jarName + "-src");
+        Path classes = tempDir.resolve(jarName + "-classes");
+        Files.createDirectories(sourceRoot);
+        Files.createDirectories(classes);
+        List<File> sources = new ArrayList<>();
+        sources.add(writeSource(sourceRoot, "fixture/v", "ValidationServerProvider",
+                validationServerSource(injectorClassName, overrideShellClassName, declareOverrideInjector)));
+        sources.add(writeSource(sourceRoot, "fixture/v", "ValidationToolProvider",
+                validationToolSource(shellClassName)));
+        sources.add(writeSource(sourceRoot, "fixture/v", "ValidationConfig",
+                "package fixture.v;\n"
+                        + "import com.reajason.javaweb.memshell.config.ShellToolConfig;\n"
+                        + "public class ValidationConfig extends ShellToolConfig { }\n"));
+        sources.add(writeSource(sourceRoot, "fixture/v", "ValidationGenerator",
+                "package fixture.v;\n"
+                        + "import com.reajason.javaweb.ShellGenerator;\n"
+                        + "import com.reajason.javaweb.memshell.config.ShellConfig;\n"
+                        + "public class ValidationGenerator implements ShellGenerator {\n"
+                        + "  public ValidationGenerator(ShellConfig shellConfig, ValidationConfig config) { }\n"
+                        + "  public byte[] getBytes() { return new byte[0]; }\n"
+                        + "}\n"));
+        sources.add(writeSource(sourceRoot, "fixture/v", "FixtureShell",
+                "package fixture.v;\npublic class FixtureShell { }\n"));
+        sources.add(writeSource(sourceRoot, "fixture/v", "FixtureInjector", injectorSource));
+        compile(sources, classes);
+
+        Path jar = tempDir.resolve(jarName);
+        try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jar))) {
+            try (Stream<Path> paths = Files.walk(classes)) {
+                for (Path classFile : (Iterable<Path>) paths.filter(Files::isRegularFile)::iterator) {
+                    String entryName = classes.relativize(classFile).toString().replace(File.separatorChar, '/');
+                    output.putNextEntry(new JarEntry(entryName));
+                    output.write(Files.readAllBytes(classFile));
+                    output.closeEntry();
+                }
+            }
+            addService(output, "com.reajason.javaweb.memshell.spi.ServerProvider",
+                    "fixture.v.ValidationServerProvider");
+            addService(output, "com.reajason.javaweb.memshell.spi.ShellToolProvider",
+                    "fixture.v.ValidationToolProvider");
+        }
+    }
+
+    private static String validationServerSource(String injectorClassName, String overrideShellClassName,
+                                                 boolean declareOverrideInjector) {
+        StringBuilder source = new StringBuilder("package fixture.v;\n"
+                + "import java.util.*;\n"
+                + "import com.reajason.javaweb.memshell.server.*;\n"
+                + "import com.reajason.javaweb.memshell.spi.*;\n"
+                + "@ServerMeta(name=\"ValidationServer\")\n"
+                + "public class ValidationServerProvider implements ServerProvider {\n"
+                + "  public AbstractServer createServer() { return new AbstractServer() {\n"
+                + "    public InjectorMapping getShellInjectorMapping() {\n"
+                + "      return InjectorMapping.builder().addInjector(\"Fixture\", \"" + injectorClassName + "\")"
+                + (declareOverrideInjector ? ".addInjector(\"Override\", \"" + injectorClassName + "\")" : "")
+                + ".build();\n"
+                + "    }\n");
+        if (overrideShellClassName != null) {
+            source.append("    public Map<String, ToolMapping> getToolMappingOverrides() {\n"
+                    + "      return Collections.singletonMap(\"ValidationTool\",\n"
+                    + "          ToolMapping.builder().addShellClass(\"Override\", \""
+                    + overrideShellClassName + "\").build());\n"
+                    + "    }\n");
+        }
+        source.append("  }; }\n"
+                + "}\n");
+        return source.toString();
+    }
+
+    private static String validationToolSource(String shellClassName) {
+        return "package fixture.v;\n"
+                + "import com.reajason.javaweb.ShellGenerator;\n"
+                + "import com.reajason.javaweb.memshell.config.ShellToolConfig;\n"
+                + "import com.reajason.javaweb.memshell.server.ToolMapping;\n"
+                + "import com.reajason.javaweb.memshell.spi.*;\n"
+                + "@ShellToolMeta(name=\"ValidationTool\")\n"
+                + "public class ValidationToolProvider implements ShellToolProvider {\n"
+                + "  public ToolMapping getToolMapping() {\n"
+                + "    return ToolMapping.builder().addShellClass(\"Fixture\", \""
+                + shellClassName + "\").build();\n"
+                + "  }\n"
+                + "  public Class<? extends ShellToolConfig> getConfigClass() { return ValidationConfig.class; }\n"
+                + "  public Class<? extends ShellGenerator> getGeneratorClass() { return ValidationGenerator.class; }\n"
+                + "}\n";
+    }
+
+    private static String validInjectorSource() {
+        return "package fixture.v;\n"
+                + "public class FixtureInjector {\n"
+                + "  public String getClassName() { return \"x\"; }\n"
+                + "  public String getBase64String() { return \"\"; }\n"
+                + "}\n";
+    }
+
     private void createMalformedPluginJar() throws IOException {
         try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(tempDir.resolve("0-bad.jar")))) {
             output.putNextEntry(new JarEntry("META-INF/services/com.reajason.javaweb.packer.Packer"));

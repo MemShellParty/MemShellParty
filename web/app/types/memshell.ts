@@ -151,6 +151,14 @@ export interface MainConfig {
   };
 }
 
+/**
+ * 服务端生成元数据，`minimumTargetJreVersion` 是 class 文件版本号（52 = Java 8）。
+ */
+export interface ServerMetadata {
+  name: string;
+  minimumTargetJreVersion: number;
+}
+
 export interface PackerOption {
   name: string;
   children: string[];

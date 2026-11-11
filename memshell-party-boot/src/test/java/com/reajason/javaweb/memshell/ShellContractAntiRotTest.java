@@ -254,7 +254,7 @@ class ShellContractAntiRotTest {
                 .server(serverName)
                 .shellTool(shellTool)
                 .shellType(shellType)
-                .targetJreVersion(targetJreVersionFor(serverName))
+                .targetJreVersion(serverJreVersion(generator, serverName))
                 .serverVersion(serverVersionFor(serverName, shellType))
                 .obfuscation(obfuscate ? ObfuscationConfig.enabled() : ObfuscationConfig.defaults())
                 .build();
@@ -307,13 +307,9 @@ class ShellContractAntiRotTest {
         return names;
     }
 
-    private static int targetJreVersionFor(String serverName) {
-        if (Server.SpringWebFlux.equals(serverName)
-                || Server.XXLJOB.equals(serverName)
-                || Server.Dubbo.equals(serverName)) {
-            return Opcodes.V1_8;
-        }
-        return Opcodes.V1_6;
+    private static int serverJreVersion(MemShellGenerator generator, String serverName) {
+        AbstractServer server = generator.getServer(serverName);
+        return server != null ? server.getMinimumTargetJreVersion() : Opcodes.V1_6;
     }
 
     private static String serverVersionFor(String serverName, String shellType) {

@@ -9,6 +9,7 @@ import com.reajason.javaweb.buddy.*;
 import com.reajason.javaweb.memshell.ShellType;
 import com.reajason.javaweb.memshell.config.InjectorConfig;
 import com.reajason.javaweb.memshell.config.ShellConfig;
+import com.reajason.javaweb.memshell.validation.InjectorTemplateValidator;
 import com.reajason.javaweb.utils.CommonUtil;
 import lombok.SneakyThrows;
 import net.bytebuddy.ByteBuddy;
@@ -49,6 +50,8 @@ public class InjectorGenerator {
         ClassLoader templateClassLoader = templateClassLoader();
         ClassFileLocator classFileLocator = ClassFileLocator.ForClassLoader.of(templateClassLoader);
         TypeDescription templateType = TypePool.Default.of(classFileLocator).describe(originalClassName).resolve();
+        InjectorTemplateValidator.requireInjectable(
+                templateType, injectorConfig.getHelperClassBytes() != null);
 
         DynamicType.Builder<?> builder = new ByteBuddy()
                 .redefine(templateType, classFileLocator)
@@ -77,6 +80,7 @@ public class InjectorGenerator {
         }
 
         if (injectorConfig.isStaticInitialize() && !shellConfig.getShellType().startsWith(ShellType.AGENT)) {
+            InjectorTemplateValidator.requireNoArgConstructor(templateType, originalClassName);
             builder = StaticBlockSelfConstructorCall.extend(builder);
         }
         return builder;

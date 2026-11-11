@@ -93,6 +93,35 @@ public class ConfigControllerIntegrationTest {
     }
 
     /**
+     * 目标 JDK 的下限由 server 自己声明，前端按 {@code minimumTargetJreVersion} 选择选项；
+     * 字段集合固定，多序列化出的字段会破坏前端解析。
+     */
+    @Test
+    public void testConfigServersEndpoint() {
+        ResponseEntity<List<Map<String, Object>>> response = restClient.get()
+                .uri("/api/config/servers")
+                .retrieve()
+                .toEntity(NODE_LIST_TYPE);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(MemShellRegistry.getInstance().getSupportedServers(),
+                response.getBody().stream().map(node -> node.get("name")).toList());
+
+        Map<String, Object> webFlux = response.getBody().stream()
+                .filter(node -> "SpringWebFlux".equals(node.get("name")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(Set.of("name", "minimumTargetJreVersion"), webFlux.keySet());
+        assertEquals(52, webFlux.get("minimumTargetJreVersion"));
+
+        Map<String, Object> tomcat = response.getBody().stream()
+                .filter(node -> "Tomcat".equals(node.get("name")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(50, tomcat.get("minimumTargetJreVersion"));
+    }
+
+    /**
      * 工具参数目录是 web / 桌面端的表单契约：工具顺序、参数顺序、分组与枚举可选值都必须稳定，
      * 多序列化出来的字段会破坏前端解析。
      */

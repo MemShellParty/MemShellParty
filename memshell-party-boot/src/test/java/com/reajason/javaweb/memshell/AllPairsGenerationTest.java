@@ -4,7 +4,6 @@ import com.reajason.javaweb.Server;
 import com.reajason.javaweb.memshell.config.InjectorConfig;
 import com.reajason.javaweb.memshell.config.ShellConfig;
 import com.reajason.javaweb.memshell.server.AbstractServer;
-import net.bytebuddy.jar.asm.Opcodes;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -46,7 +45,7 @@ class AllPairsGenerationTest {
                                 .server(serverName)
                                 .shellTool(shellTool)
                                 .shellType(shellType)
-                                .targetJreVersion(targetJreVersionFor(serverName))
+                                .targetJreVersion(server.getMinimumTargetJreVersion())
                                 .serverVersion(serverVersionFor(serverName, shellType))
                                 .build();
                         MemShellResult result = memShellGenerator.generate(shellConfig,
@@ -87,19 +86,6 @@ class AllPairsGenerationTest {
         // 870 = 869 + 1（Tomcat 的 Godzilla 新增 Upgrade）
         assertEquals(870, combinations.size(), "advertised (server, shellTool, shellType) matrix changed");
         assertEquals(Collections.emptyList(), failures, failures.size() + " combination(s) failed to generate");
-    }
-
-    /**
-     * Web UI 在选择 SpringWebFlux / XXLJOB / Dubbo 时会把目标 JDK 提升到 Java 8（这些模板使用
-     * lambda/invokedynamic，Java 6 类文件写不出来），这里对齐同一个默认值。
-     */
-    private static int targetJreVersionFor(String serverName) {
-        if (Server.SpringWebFlux.equals(serverName)
-                || Server.XXLJOB.equals(serverName)
-                || Server.Dubbo.equals(serverName)) {
-            return Opcodes.V1_8;
-        }
-        return Opcodes.V1_6;
     }
 
     /**

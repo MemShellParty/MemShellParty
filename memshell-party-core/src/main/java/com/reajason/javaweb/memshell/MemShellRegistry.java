@@ -11,6 +11,7 @@ import com.reajason.javaweb.memshell.spi.ServerMeta;
 import com.reajason.javaweb.memshell.spi.ServerProvider;
 import com.reajason.javaweb.memshell.spi.ShellToolMeta;
 import com.reajason.javaweb.memshell.spi.ShellToolProvider;
+import com.reajason.javaweb.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +19,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -307,11 +307,16 @@ public class MemShellRegistry {
         if (injectorMapping == null) {
             return;
         }
-        Set<String> supportedShellTypes = injectorMapping.getSupportedShellTypes();
+        // 服务端覆盖先落位，工具自己的映射只补缺失类型：插件 server 因此可以给内置工具
+        // 加自己的传输实现，而不必复制整个工具。
+        Map<String, String> overrides = serverToolMappingOverrides(server, shellTool);
         ToolMapping.ToolMappingBuilder builder = ToolMapping.builder();
-        for (String shellType : supportedShellTypes) {
-            String shellClassName = rawToolMapping.get(shellType);
-            if (shellClassName != null) {
+        for (String shellType : injectorMapping.getSupportedShellTypes()) {
+            String shellClassName = overrides.get(shellType);
+            if (StringUtils.isBlank(shellClassName)) {
+                shellClassName = rawToolMapping.get(shellType);
+            }
+            if (!StringUtils.isBlank(shellClassName)) {
                 builder.addShellClass(shellType, shellClassName);
             }
         }
@@ -319,6 +324,15 @@ public class MemShellRegistry {
         if (mapping.isNotEmpty()) {
             server.addToolMapping(shellTool, mapping);
         }
+    }
+
+    private static Map<String, String> serverToolMappingOverrides(AbstractServer server, String shellTool) {
+        Map<String, ToolMapping> overrides = server.getToolMappingOverrides();
+        if (overrides == null) {
+            return Collections.emptyMap();
+        }
+        ToolMapping override = overrides.get(shellTool);
+        return override == null ? Collections.<String, String>emptyMap() : override.getShellClassMap();
     }
 
     private static final class Candidate<T> {

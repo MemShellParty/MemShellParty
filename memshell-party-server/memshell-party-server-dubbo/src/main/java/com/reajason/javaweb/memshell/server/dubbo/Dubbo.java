@@ -10,8 +10,18 @@ import com.reajason.javaweb.utils.CommonUtil;
 import com.reajason.javaweb.utils.StringUtils;
 
 import com.reajason.javaweb.memshell.ShellType;
+import net.bytebuddy.jar.asm.Opcodes;
 
 public class Dubbo extends AbstractServer {
+
+    /**
+     * 注入器模板使用 lambda/invokedynamic，Java 6 类文件表达不了。
+     */
+    @Override
+    public int getMinimumTargetJreVersion() {
+        return Opcodes.V1_8;
+    }
+
     @Override
     public InjectorMapping getShellInjectorMapping() {
         return InjectorMapping.builder()

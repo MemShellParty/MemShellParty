@@ -8,6 +8,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+1. `AbstractServer` 新增插件扩展钩子：`getInjectorTemplateClassLoader()` 解析模板字节所用的类加载器、`getMinimumTargetJreVersion()` 声明该 server 的最低目标 JDK、`getShellPackageName(serverName)` / `getShellClassName(serverName, shellType)` 控制 shell 包名与类名、`postProcessInjectorBytes(...)` 生成后改写注入器字节；插件 server 不再只能落在 `org.apache.http.web.handlers`
+2. `PluginBootstrap.validate(Path)` 只读校验插件目录：SPI 实现可加载性与无参构造、注入器模板与契约方法、shell tool 的 generator/config 构造器与 shell 模板、packer 元数据；返回 `PluginValidationReport`，不注册任何 provider
+3. REST `GET /api/config/servers` 暴露每个 server 的最低目标 JDK
+4. `AbstractServer#getToolMappingOverrides()`：插件 server 可以给已注册的工具补充或覆盖 `shellType -> shell` 模板，同名类型以服务端为准，工具自己的映射只补缺失类型；注册顺序不影响结果，无需复制工具名、配置项与界面条目
+5. `PluginBootstrap.validate(Path)` 校验上述覆盖：shell 类型没有注入器、模板类名为空或模板不存在都会进报告
+
+### Fixed
+
+1. 注入器模板缺少 `getClassName()` / `getBase64String()` 时生成器静默跳过写入，只在目标容器里表现为壳类名或字节缺失；现在生成前由 `InjectorTemplateValidator` 报 `GenerationException`
+2. 开启 `staticInitialize` 的模板没有无参构造时，生成的 `<clinit>` 会抛 `InstantiationException`；现在生成前报错
+3. 注入器映射里写错模板类名时，目录仍会广告该类型并生成失败；`getSupportedShellTypes` 现在按模板字节是否存在过滤
+
+### Changed
+
+1. 目标 JDK 的下限由 server 声明：SpringWebFlux、XxlJob、Dubbo 覆写为 Java 8，生成入口把更低的取值抬到下限；Web 端与桌面端不再按 server 名字写死这份名单，插件 server 声明的下限会同步到两个界面
+
 ## [v3.1.0](https://github.com/MemShellParty/MemShellParty/releases/tag/v3.1.0) - 2026-11-10
 
 ### Added

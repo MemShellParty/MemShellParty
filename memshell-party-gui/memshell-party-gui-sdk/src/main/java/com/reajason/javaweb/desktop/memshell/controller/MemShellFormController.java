@@ -260,12 +260,8 @@ public class MemShellFormController {
         }
         state.setShellTool(nextTool);
 
-        // 对齐 web：SpringWebFlux/XXLJOB/Dubbo 至少 Java 8，其余回落 Java 6
-        int currentJdk = parseInt(state.getTargetJdkVersion(), 50);
-        boolean raise = ("SpringWebFlux".equals(state.getServer())
-                || "XXLJOB".equals(state.getServer())
-                || "Dubbo".equals(state.getServer())) && currentJdk <= 52;
-        state.setTargetJdkVersion(raise ? "52" : "50");
+        // 目标 JDK 的下限由 server 自己声明，插件 server 声明更高的下限时这里自动跟随
+        state.setTargetJdkVersion(configCatalogService.getMinimumTargetJdkVersion(state.getServer()));
         state.setByPassJavaModule(parseInt(state.getTargetJdkVersion(), 50) >= 53);
 
         if (!initial) {

@@ -52,7 +52,7 @@ public class MemShellHelper implements IHelper {
         args.add(Args.arg(pluginHelper, "serverVersion", "",
                 "服务版本，留空自动；TongWeb（6/7/8）与 Jetty（6/7+/12）的部分类型必须指定"));
         args.add(Args.arg(pluginHelper, "targetJdkVersion", "",
-                "目标 JRE 版本 50/52/53/55/61/65，留空自动（SpringWebFlux、XXLJOB、Dubbo 自动 Java 8）"));
+                "目标 JRE 版本 50/52/53/55/61/65，留空自动（自动取 server 声明的最低版本）"));
         args.add(Args.arg(pluginHelper, "urlPattern", "",
                 "挂载路径，留空默认 /*；Servlet/Handler/WebSocket 等类型必须给具体路径"));
         args.add(Args.arg(pluginHelper, "shellClassName", "",
