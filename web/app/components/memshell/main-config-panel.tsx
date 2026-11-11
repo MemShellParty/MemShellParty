@@ -18,8 +18,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Tabs } from "@/components/ui/tabs";
 import {
+  JDKVersion,
   type MainConfig,
   type PackerConfig,
+  type ServerMetadata,
   type ShellToolConfigEntry,
   ShellToolType,
 } from "@/types/memshell";
@@ -65,6 +67,7 @@ const declaresParam = (
 export default function MainConfigPanel({
   mainConfig,
   shellToolConfigs,
+  serverMetadata,
   packerConfig,
   form,
   configError,
@@ -77,6 +80,7 @@ export default function MainConfigPanel({
 }: Readonly<{
   mainConfig: MainConfig | undefined;
   shellToolConfigs: Array<ShellToolConfigEntry> | undefined;
+  serverMetadata: Array<ServerMetadata> | undefined;
   packerConfig: PackerConfig | undefined;
   form: UseFormReturn<MemShellFormSchema>;
   configError: Error | null;
@@ -166,20 +170,20 @@ export default function MainConfigPanel({
       }
     }
 
-    const currentTargetJdk = form.getValues("targetJdkVersion") as string;
-    const currentJdkVersion = Number.parseInt(currentTargetJdk, 10);
-    const shouldRaiseJdkVersion =
-      (server === "SpringWebFlux" || server === "XXLJOB" || server === "Dubbo") &&
-      currentJdkVersion <= 52;
-    const nextJdkVersion = shouldRaiseJdkVersion ? "52" : "50";
-    if (currentTargetJdk !== nextJdkVersion) {
+    // 目标 JDK 的下限由服务端声明（Java 8 起模板才能用 lambda/invokedynamic），
+    // 取选项里第一个不低于下限的值；元数据没到或没加载出来时按 Java 6 处理。
+    const minimumJreVersion =
+      serverMetadata?.find((metadata) => metadata.name === server)?.minimumTargetJreVersion ?? 50;
+    const nextJdkVersion =
+      JDKVersion.find((option) => Number.parseInt(option.value, 10) >= minimumJreVersion)?.value ?? "50";
+    if (form.getValues("targetJdkVersion") !== nextJdkVersion) {
       form.setValue("targetJdkVersion", nextJdkVersion);
     }
 
     form.resetField("serverVersion");
     form.resetField("byPassJavaModule");
     form.resetField("urlPattern");
-  }, [form, mainConfig, server, restoreGuardRef]);
+  }, [form, mainConfig, server, serverMetadata, restoreGuardRef]);
 
   useEffect(() => {
     if (restoreGuardRef?.current) return;

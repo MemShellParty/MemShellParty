@@ -106,6 +106,8 @@ Maven 需要引入全部 provider 时，将聚合 BOM 声明为普通 `pom` 类�
 已通过 `memshell-party-bom` 管理版本时，可以省略这里的 `<version>`。
 
 运行期为 Java 8+；生成的类默认是 class 版本 50（Java 6），用 `ShellConfig.targetJreVersion` 调整。
+server 可以声明自己的下限（`AbstractServer#getMinimumTargetJreVersion()`），低于下限的取值会被抬到下限；
+SpringWebFlux、XxlJob 与 Dubbo 声明为 Java 8。
 
 ### 生成内存马
 
@@ -133,8 +135,9 @@ MemShellResult result = new MemShellGenerator().generate(
 System.out.println(result.getShellBytesBase64Str());
 ```
 
-没传的字段由生成器补齐：`serverVersion=unknown`、`targetJreVersion=Java 6`、`urlPattern=/*`、
-随机的 shell / 注入器类名；实际使用的配置写回 `result`。
+没传的字段由生成器补齐：`serverVersion=unknown`、`targetJreVersion` 取 server 声明的最低版本
+（多数为 Java 6，SpringWebFlux/XxlJob/Dubbo 为 Java 8）、`urlPattern=/*`、随机的 shell / 注入器类名；
+实际使用的配置写回 `result`。
 
 | 结果 | 内容 |
 | --- | --- |
@@ -198,6 +201,9 @@ catalog.getShellTypes(Server.Tomcat, ShellTool.Godzilla);
 
 矩阵是 server 注入器映射与工具 shellType 映射的交集，没有注入器的组合不会出现；不存在的组合返回空列表
 而不是 null。REST `GET /api/config`、GUI 下拉框与 MCP `memshell_capabilities` 都读这份快照。
+
+每个 server 的生成元数据（目前是最低目标 JDK）走 `AbstractServer#getMinimumTargetJreVersion()`，
+REST 为 `GET /api/config/servers`。GUI 与 Web 端的「目标 JDK」下限由它决定，不再按 server 名字写死。
 
 ### 打包与投递
 

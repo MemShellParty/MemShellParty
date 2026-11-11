@@ -1,9 +1,11 @@
 package com.reajason.javaweb.boot.controller;
 
+import com.reajason.javaweb.boot.vo.ServerVO;
 import com.reajason.javaweb.memshell.MemShellGenerator;
 import com.reajason.javaweb.memshell.PackerRegistry;
 import com.reajason.javaweb.memshell.ToolConfigFactory;
 import com.reajason.javaweb.memshell.obfuscation.OptionRegistry;
+import com.reajason.javaweb.memshell.server.AbstractServer;
 import com.reajason.javaweb.packer.PackerCategory;
 import com.reajason.javaweb.probe.generator.response.ResponseGenerator;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -45,6 +48,23 @@ public class ConfigController {
     @RequestMapping
     public Map<String, Map<String, List<String>>> config() {
         return memShellGenerator.getShellTypeCatalog().asMap();
+    }
+
+    /**
+     * 每个服务端的生成元数据。目标 JDK 的最低版本由 server 自己声明（
+     * {@link AbstractServer#getMinimumTargetJreVersion()}），前端不再按服务端名字写死。
+     */
+    @GetMapping("/servers")
+    public List<ServerVO> getServers() {
+        List<ServerVO> servers = new ArrayList<>();
+        for (String serverName : memShellGenerator.getSupportedServers()) {
+            AbstractServer server = memShellGenerator.getServer(serverName);
+            if (server == null) {
+                continue;
+            }
+            servers.add(new ServerVO(serverName, server.getMinimumTargetJreVersion()));
+        }
+        return servers;
     }
 
     /**

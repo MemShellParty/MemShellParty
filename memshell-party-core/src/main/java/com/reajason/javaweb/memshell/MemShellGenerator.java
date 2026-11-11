@@ -94,6 +94,11 @@ public class MemShellGenerator {
         if (server == null) {
             throw new InvalidInputException("Unsupported server: " + serverName);
         }
+        // server 模板可能用了 lambda/invokedynamic，低于其最低版本时 class 文件写不出来。
+        // 空值在入口已补成 Java 6，这里统一抬到 server 声明的下限。
+        if (shellConfig.getTargetJreVersion() < server.getMinimumTargetJreVersion()) {
+            shellConfig.setTargetJreVersion(server.getMinimumTargetJreVersion());
+        }
         String injectorTemplateClassName;
 
         if (ShellTool.Custom.equals(shellConfig.getShellTool())) {
@@ -109,7 +114,7 @@ public class MemShellGenerator {
         }
 
         if (StringUtils.isBlank(shellToolConfig.getShellClassName())) {
-            shellToolConfig.setShellClassName(AbstractServer.generateShellClassName(serverName, shellConfig.getShellType()));
+            shellToolConfig.setShellClassName(server.getShellClassName(serverName, shellConfig.getShellType()));
         }
 
         if (StringUtils.isBlank(injectorConfig.getInjectorClassName())) {
@@ -166,12 +171,16 @@ public class MemShellGenerator {
         }
 
         injectorConfig.setInjectorTemplateClassName(injectorTemplateClassName);
-        injectorConfig.setInjectorTemplateClassLoader(server.getClass().getClassLoader());
+        // 调用方显式给的加载器优先；否则用 server 声明的那个，默认仍是 provider 自己的加载器。
+        if (injectorConfig.getInjectorTemplateClassLoader() == null) {
+            injectorConfig.setInjectorTemplateClassLoader(server.getInjectorTemplateClassLoader());
+        }
         injectorConfig.setShellClassName(shellToolConfig.getShellClassName());
         injectorConfig.setShellClassBytes(shellBytes);
 
         InjectorGenerator injectorGenerator = new InjectorGenerator(shellConfig, injectorConfig);
-        byte[] injectorBytes = injectorGenerator.generate();
+        byte[] injectorBytes = server.postProcessInjectorBytes(
+                injectorGenerator.generate(), shellConfig, shellToolConfig, injectorConfig);
         Map<String, byte[]> innerClassBytes = injectorGenerator.getInnerClassBytes();
         boolean probeMode = shellConfig.getProbe() != null
                 && !shellConfig.getShellType().startsWith(ShellType.AGENT);

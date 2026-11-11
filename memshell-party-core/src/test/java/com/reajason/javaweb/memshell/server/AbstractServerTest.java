@@ -2,9 +2,13 @@ package com.reajason.javaweb.memshell.server;
 
 import com.reajason.javaweb.Server;
 import com.reajason.javaweb.memshell.ShellType;
+import net.bytebuddy.jar.asm.Opcodes;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -41,5 +45,58 @@ class AbstractServerTest {
         // 命名空间，否则注入器的 loadClass 探测会把类名永久缓存为找不到
         String className = AbstractServer.generateShellClassName(Server.TongWeb, ShellType.FILTER);
         assertTrue(className.startsWith("com.tongweb."), className);
+    }
+
+    @Test
+    void hooksDefaultToProviderLoaderAndJava6() {
+        AbstractServer server = new AbstractServer() {
+            @Override
+            public InjectorMapping getShellInjectorMapping() {
+                return InjectorMapping.builder().build();
+            }
+        };
+
+        assertSame(server.getClass().getClassLoader(), server.getInjectorTemplateClassLoader());
+        assertEquals(Opcodes.V1_6, server.getMinimumTargetJreVersion());
+        assertEquals(AbstractServer.getWebPackageName("Blade"), server.getShellPackageName("Blade"));
+        assertTrue(server.getShellClassName(Server.Tomcat, ShellType.FILTER)
+                .startsWith(AbstractServer.getWebPackageName(Server.Tomcat) + "."));
+    }
+
+    @Test
+    void pluginCanChooseShellPackage() {
+        AbstractServer server = new AbstractServer() {
+            @Override
+            public InjectorMapping getShellInjectorMapping() {
+                return InjectorMapping.builder().build();
+            }
+
+            @Override
+            public String getShellPackageName(String serverName) {
+                return "com.helloworld.web.handlers";
+            }
+        };
+
+        assertTrue(server.getShellClassName("Blade", ShellType.FILTER)
+                .startsWith("com.helloworld.web.handlers."));
+    }
+
+    @Test
+    void supportedShellTypesRequireExistingInjectorTemplate() {
+        AbstractServer server = new AbstractServer() {
+            @Override
+            public InjectorMapping getShellInjectorMapping() {
+                return InjectorMapping.builder()
+                        .addInjector("Present", AbstractServerTest.class.getName())
+                        .addInjector("Absent", "does.not.ExistInjector")
+                        .build();
+            }
+        };
+        server.addToolMapping("Tool", ToolMapping.builder()
+                .addShellClass("Present", "shell.Present")
+                .addShellClass("Absent", "shell.Absent")
+                .build());
+
+        assertEquals(Collections.singleton("Present"), server.getSupportedShellTypes("Tool"));
     }
 }

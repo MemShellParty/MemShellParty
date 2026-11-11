@@ -21,6 +21,7 @@ import {
   type MemShellGenerateResponse,
   type MemShellResult,
   type PackerConfig,
+  type ServerMetadata,
   type ShellToolConfigEntry,
 } from "@/types/memshell";
 import {
@@ -80,6 +81,8 @@ const fetchPackerConfig = () => fetchJson<PackerConfig>(`${env.API_URL}/api/conf
 const fetchShellToolConfigs = () =>
   fetchJson<Array<ShellToolConfigEntry>>(`${env.API_URL}/api/config/shelltool/configs`);
 
+const fetchServerMetadata = () => fetchJson<Array<ServerMetadata>>(`${env.API_URL}/api/config/servers`);
+
 export default function MemShellPage() {
   const mainConfigQuery = useQuery<MainConfig>({
     queryKey: ["mainConfig"],
@@ -96,9 +99,15 @@ export default function MemShellPage() {
     queryFn: fetchShellToolConfigs,
   });
 
+  const serverMetadataQuery = useQuery<Array<ServerMetadata>>({
+    queryKey: ["serverMetadata"],
+    queryFn: fetchServerMetadata,
+  });
+
   const { data: mainConfig } = mainConfigQuery;
   const { data: packerConfig } = packerConfigQuery;
   const { data: shellToolConfigs } = shellToolConfigsQuery;
+  const { data: serverMetadata } = serverMetadataQuery;
 
   // 核心配置由两个接口共同决定，任一失败都算配置不可用；不能继续把它们当成「加载中」。
   // 已经有数据时忽略后台刷新失败，避免一次 refetch 抖动把可用表单换成错误页。
@@ -253,6 +262,7 @@ export default function MemShellPage() {
                   key={restoreNonce}
                   mainConfig={mainConfig}
                   shellToolConfigs={shellToolConfigs}
+                  serverMetadata={serverMetadata}
                   packerConfig={packerConfig}
                   form={form}
                   configError={configError}

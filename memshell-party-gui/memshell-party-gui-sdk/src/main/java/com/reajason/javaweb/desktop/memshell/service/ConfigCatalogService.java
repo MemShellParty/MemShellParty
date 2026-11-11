@@ -5,6 +5,7 @@ import com.reajason.javaweb.memshell.PackerRegistry;
 import com.reajason.javaweb.memshell.ToolConfigFactory;
 import com.reajason.javaweb.memshell.server.AbstractServer;
 import com.reajason.javaweb.packer.PackerCategory;
+import net.bytebuddy.jar.asm.Opcodes;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,6 +111,21 @@ public class ConfigCatalogService {
 
     public List<String> getTargetJdkOptions() {
         return Arrays.asList("50", "52", "53", "55", "61", "65");
+    }
+
+    /**
+     * 该服务端能选的最低目标 JDK：取选项里第一个不低于
+     * {@link AbstractServer#getMinimumTargetJreVersion()} 的值。
+     */
+    public String getMinimumTargetJdkVersion(String server) {
+        AbstractServer abstractServer = memShellGenerator.getServer(server);
+        int minimum = abstractServer != null ? abstractServer.getMinimumTargetJreVersion() : Opcodes.V1_6;
+        for (String option : getTargetJdkOptions()) {
+            if (Integer.parseInt(option) >= minimum) {
+                return option;
+            }
+        }
+        return getTargetJdkOptions().get(0);
     }
 
     public String getTargetJdkLabel(String value) {

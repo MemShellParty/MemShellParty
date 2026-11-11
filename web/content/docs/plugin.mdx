@@ -92,12 +92,37 @@ class MyServer extends AbstractServer {
 | `String getBase64String()` | gzip + Base64 的内存马字节 |
 | `String getHelperBase64String()` | 可选，辅助类字节 |
 
-模板其余部分原样保留。生成器只重命名并投递注入器本身（内部类会一并处理），不会打包模板引用的外部辅助类；
-需要 Base64、gzip 或反射工具时，把方法复制进模板。注入器模板要与 provider 放在同一个 jar：生成器用
-provider 的类加载器按类名读取模板字节。
+`getClassName` 与 `getBase64String` 是必需方法。生成前 `InjectorTemplateValidator` 会解析模板，方法缺失或
+返回类型不是 `String` 直接抛 `GenerationException`；以前缺失方法只会被静默跳过，壳类名或字节不会写进注入器。
+声明了 `getUrlPattern` / `getHelperBase64String` 的模板同样会校验返回类型。
 
-映射会与每个工具声明的 `shellType` 求交集：声明了 `Filter`，内置 Godzilla、Command 等所有支持 `Filter`
+开启 `staticInitialize` 时生成器会在 `<clinit>` 里 `new` 模板实例，模板因此需要无参构造。没有静态块的模板
+不需要额外处理：生成器会自动补出 `<clinit>`。没有无参构造的模板会在生成时报错。
+
+模板其余部分原样保留。生成器只重命名并投递注入器本身（内部类会一并处理），不会打包模板引用的外部辅助类；
+需要 Base64、gzip 或反射工具时，把方法复制进模板。注入器模板默认与 provider 放在同一个 jar：生成器用
+provider 的类加载器按类名读取模板字节；模板继承了宿主没有的框架类时，覆写
+`getInjectorTemplateClassLoader()` 返回能看到这些类（或桩类）的加载器。
+
+映射会与每个工具声明的 `shellType` 合并，而不是简单求交集：工具映射覆盖到的类型保留，服务端还可以用
+`getToolMappingOverrides()` 补充自己的实现。声明了 `Filter`，内置 Godzilla、Command 等所有支持 `Filter`
 的工具自动可用，不需要逐个工具适配。Jakarta 变体复用同一份 javax 模板，生成期由 `JakartaPostProcessor` 改名。
+
+覆盖让插件 server 给内置工具加自己的传输实现，不必复制工具名、配置项和界面条目。键是工具名，值是
+`ToolMapping`；同名类型以服务端为准，工具自己的映射只补缺失的类型。注册顺序不影响结果。
+
+```java
+public class MyServer extends AbstractServer {
+    @Override
+    public Map<String, ToolMapping> getToolMappingOverrides() {
+        return Collections.singletonMap("Godzilla",
+                ToolMapping.builder().addShellClass("AkkaHttp", "com.example.GodzillaAkkaHttpShell").build());
+    }
+}
+```
+
+覆盖仍受两条约束：类型必须在本服务端的 `getShellInjectorMapping()` 里，shell 模板必须能在插件 jar 中找到。
+不满足时该类型不会被广告，`PluginBootstrap.validate` 会把原因列进报告。
 
 自定义 `shellType` 的容器回调方法不在内置契约里。开启混淆时覆写
 `getShellMethodContracts(shellType)` 与 `getShellFieldContracts(shellType)`，否则 class-obf 可能改掉容器要
@@ -109,7 +134,16 @@ provider 的类加载器按类名读取模板字节。
 | --- | --- |
 | `getListenerInterceptor()` | Listener 的 `getResponseFromRequest` 适配器 |
 | `postProcessShellBytes(...)` | 生成后改 shell 字节、注入 helper、调整 urlPattern |
+| `postProcessInjectorBytes(...)` | 生成后改注入器字节，如按中间件版本替换父类 |
+| `getInjectorTemplateClassLoader()` | 解析注入器模板字节用的类加载器；默认是 provider 的加载器 |
+| `getMinimumTargetJreVersion()` | 该 server 能生成的最低 class 版本；模板用 lambda 时返回 `Opcodes.V1_8` |
+| `getToolMappingOverrides()` | 给已注册的工具补充或覆盖 `shellType -> shell` 模板；服务端条目优先 |
+| `getShellClassName(serverName, shellType)` / `getShellPackageName(serverName)` | shell 类名与包名；插件 server 默认落在 `org.apache.http.web.handlers`，覆写包名即可 |
 | `getShellObfuscationOptionOverrides(shellType)` | 对受限类加载器强制混淆选项 |
+
+目标 JDK 由 `getMinimumTargetJreVersion()` 决定：调用方给了更低的值时生成入口会抬到这条线，
+`GET /api/config/servers` 把它交给 Web 端，桌面端也读同一个钩子。插件 server 只要覆写它，两个界面都会
+自动选到正确的下限。
 
 ### 扩展 shellTool
 
@@ -252,6 +286,24 @@ JNA、Jackson 等可选依赖。
 
 `PackerRegistry.pack(name, result)` 是统一入口：名称为空返回原始 Base64，`JarPacker` 返回 jar 字节的
 Base64。注册名不能与内置或其他插件重复。
+
+### 校验插件目录
+
+`PluginBootstrap.validate(Path)` 只读检查一个插件目录，不注册任何 provider，也不会改写
+`MemShellRegistry` / `PackerRegistry`，可以在宿主启动前或构建期单独运行：
+
+```java
+PluginValidationReport report = PluginBootstrap.validate(Paths.get("plugins"));
+report.isValid();      // false 表示存在会让生成在运行期失败的问题
+report.getErrors();    // 模板缺失、契约方法缺失、provider 实例化失败等
+report.getWarnings();  // 不阻止加载、但特定配置下会失败的问题，如模板没有无参构造
+```
+
+检查覆盖三类 SPI：实现类名格式、可加载性、是否实现对应接口、public 无参构造与实例化；server 的每个注入器
+模板是否存在并满足 `InjectorTemplateValidator` 的契约，以及 `getToolMappingOverrides()` 里的每个 shell 模板
+是否有对应注入器并能找到；shell tool 的 generator/config 类、
+`(ShellConfig, configClass)` 构造器与每个 shell 模板类；packer 的 `@PackerMeta` 与注册名。写错的模板类名、
+缺失的契约方法都会在这一步暴露，而不是等到用户点「生成」才失败。
 
 ### 打包为外置插件
 
