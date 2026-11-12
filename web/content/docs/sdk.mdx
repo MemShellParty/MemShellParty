@@ -17,7 +17,7 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 | `memshell-party-core` | `MemShellGenerator`、`ProbeShellGenerator`、注册表、混淆；传递 `api`、`common` 与 ByteBuddy |
 | `memshell-party-api` | 配置、结果、SPI 与 packer 契约；只需契约类型时单独引入（packer 插件只依赖它） |
 | `memshell-party-server-servlet` | 内置 servlet 容器的注入器；聚合 BOM `memshell-party-server-all` |
-| `memshell-party-server-<name>` | 框架/协议 provider（Spring MVC/WebFlux、Struts2、XXL-Job、Dubbo） |
+| `memshell-party-server-<name>` | 框架/协议 provider（Spring MVC/WebFlux、Struts2、XXL-Job） |
 | `memshell-party-shelltool-<name>` | 工具协议、配置与模板；聚合 BOM `memshell-party-shelltool-all` |
 | `memshell-party-packer` | 内置打包方式，可选 |
 | `memshell-party-stub-<name>` | 生成期签名桩，由对应 server 模块按需传递 |
@@ -107,7 +107,7 @@ Maven 需要引入全部 provider 时，将聚合 BOM 声明为普通 `pom` 类�
 
 运行期为 Java 8+；生成的类默认是 class 版本 50（Java 6），用 `ShellConfig.targetJreVersion` 调整。
 server 可以声明自己的下限（`AbstractServer#getMinimumTargetJreVersion()`），低于下限的取值会被抬到下限；
-SpringWebFlux、XxlJob 与 Dubbo 声明为 Java 8。
+SpringWebFlux 与 XxlJob 声明为 Java 8。
 
 ### 生成内存马
 
@@ -136,14 +136,14 @@ System.out.println(result.getShellBytesBase64Str());
 ```
 
 没传的字段由生成器补齐：`serverVersion=unknown`、`targetJreVersion` 取 server 声明的最低版本
-（多数为 Java 6，SpringWebFlux/XxlJob/Dubbo 为 Java 8）、`urlPattern=/*`、随机的 shell / 注入器类名；
+（多数为 Java 6，SpringWebFlux/XxlJob 为 Java 8）、`urlPattern=/*`、随机的 shell / 注入器类名；
 实际使用的配置写回 `result`。
 
 | 结果 | 内容 |
 | --- | --- |
 | `getShellClassName()` / `getShellBytesBase64Str()` | 内存马类名与字节 |
 | `getInjectorClassName()` / `getInjectorBytesBase64Str()` | 注入器类名与字节 |
-| `getHelperClassName()` / `getHelperBytesBase64Str()` | 辅助类（RawWebSocket、Dubbo 等），没有时为 null |
+| `getHelperClassName()` / `getHelperBytesBase64Str()` | 辅助类（RawWebSocket 等），没有时为 null |
 | `getShellToolConfig()` | 实际工具配置，含随机默认值 |
 | `getObfuscationInfo()` | 混淆前后体积；未开启混淆时为 null |
 
@@ -296,7 +296,6 @@ MemShellGui.createMemShellFrame().setVisible(true);
 | server 模块 | 签名桩 |
 | --- | --- |
 | `memshell-party-server-servlet` | `memshell-party-stub-tomcat`、`memshell-party-stub-jetty` |
-| `memshell-party-server-dubbo` | `memshell-party-stub-dubbo` |
 
 消费方同时引入真实容器（例如测试里的 `tomcat-embed-core`、`jetty-server`）时，要排除同包名的桩，
 否则真身会被桩遮蔽：

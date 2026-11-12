@@ -92,19 +92,6 @@ class MemShellObfuscationScopeTest {
     }
 
     @Test
-    void allScopeKeepsDubboServiceInterfaceLoadable() throws Exception {
-        MemShellResult result = generate(Server.Dubbo, ShellType.APACHE_DUBBO_SERVICE,
-                ObfuscationScope.ALL, false);
-
-        GeneratedClassLoader loader = new GeneratedClassLoader();
-        Class<?> serviceInterface = loader.define(result.getHelperClassName(), result.getHelperBytes());
-        Class<?> service = loader.define(result.getShellClassName(), result.getShellBytes());
-        assertTrue(serviceInterface.isInterface());
-        assertTrue(serviceInterface.isAssignableFrom(service));
-        assertNotNull(serviceInterface.getMethod("handle", byte[].class));
-    }
-
-    @Test
     void injectorScopeKeepsPersistenceCompanionsLoadable() throws Exception {
         MemShellResult result = generate(Server.Tomcat, ShellType.AGENT_FILTER_CHAIN,
                 ObfuscationScope.ALL, false);

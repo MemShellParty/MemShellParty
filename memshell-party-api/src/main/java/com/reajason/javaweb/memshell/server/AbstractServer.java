@@ -63,7 +63,7 @@ public abstract class AbstractServer {
      * 获取特定 shellType 下不可被混淆改名的方法契约（系统契约）。
      * <p>
      * 默认覆盖所有内置 shellType：壳类型本身就决定了容器回调入口（Filter/Servlet/Valve/
-     * WebSocket/Interceptor/Netty/Dubbo 等），与具体中间件无关，因此无需每个 Server 重复声明。
+     * WebSocket/Interceptor/Netty 等），与具体中间件无关，因此无需每个 Server 重复声明。
      * 未知或为空的 shellType 返回 {@link MethodContracts#CONSERVATIVE} 兜底。
      * <p>
      * 唯一例外是 {@code Handler}/{@code JakartaHandler}：Jetty 与 Undertow 的入口方法不同，
@@ -125,10 +125,6 @@ public abstract class AbstractServer {
                 return MethodContracts.SPRING_WEBFLUX_HANDLER_FUNCTION_CONTRACTS;
             case NETTY_HANDLER:
                 return MethodContracts.NETTY_HANDLER_CONTRACTS;
-            case DUBBO_SERVICE:
-            case APACHE_DUBBO_SERVICE:
-            case ALIBABA_DUBBO_SERVICE:
-                return MethodContracts.DUBBO_CONTRACTS;
             case ACTION:
                 return MethodContracts.STRUTS2_CONTRACTS;
             case WEBLOGIC_AGENT_SERVLET_CONTEXT:
@@ -174,7 +170,7 @@ public abstract class AbstractServer {
 
     /**
      * shellBytes 生成完成后的 server 专属改写钩子：可改写字节码（如 Jetty Handler 按版本换父类）、
-     * 向 {@code injectorConfig} 贡献 helper 类（如 Dubbo 接口、WebSocket 绕过 helper）、调整 urlPattern。
+     * 向 {@code injectorConfig} 贡献 helper 类（如 WebSocket 绕过 helper）、调整 urlPattern。
      * 默认原样返回。
      *
      * @return 改写后的 shell 字节码

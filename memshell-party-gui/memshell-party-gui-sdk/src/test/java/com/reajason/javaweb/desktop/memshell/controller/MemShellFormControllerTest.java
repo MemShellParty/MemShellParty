@@ -69,16 +69,13 @@ class MemShellFormControllerTest {
     }
 
     @Test
-    void jdkRaisedForWebFluxXxlJobDubbo() {
+    void jdkRaisedForWebFluxAndXxlJob() {
         MemShellFormController c = newController();
         c.setServer("SpringWebFlux");
         assertEquals("52", c.getState().getTargetJdkVersion());
         assertFalse(c.getState().isByPassJavaModule());
 
         c.setServer("XXLJOB");
-        assertEquals("52", c.getState().getTargetJdkVersion());
-
-        c.setServer("Dubbo");
         assertEquals("52", c.getState().getTargetJdkVersion());
 
         c.setServer("Tomcat");
@@ -238,9 +235,6 @@ class MemShellFormControllerTest {
         assertTrue(c.isToolParamVisible("paramName"));
 
         c.setShellType("WebSocket");
-        assertFalse(c.isToolParamVisible("paramName"));
-
-        c.setServer("Dubbo");
         assertFalse(c.isToolParamVisible("paramName"));
     }
 }

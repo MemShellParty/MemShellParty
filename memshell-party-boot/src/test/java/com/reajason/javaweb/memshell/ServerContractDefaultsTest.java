@@ -65,9 +65,6 @@ class ServerContractDefaultsTest {
                 BARE.getShellMethodContracts(SPRING_WEBFLUX_HANDLER_FUNCTION));
         assertSame(MethodContracts.NETTY_HANDLER_CONTRACTS, BARE.getShellMethodContracts(NETTY_HANDLER));
 
-        assertSame(MethodContracts.DUBBO_CONTRACTS, BARE.getShellMethodContracts(DUBBO_SERVICE));
-        assertSame(MethodContracts.DUBBO_CONTRACTS, BARE.getShellMethodContracts(APACHE_DUBBO_SERVICE));
-        assertSame(MethodContracts.DUBBO_CONTRACTS, BARE.getShellMethodContracts(ALIBABA_DUBBO_SERVICE));
         assertSame(MethodContracts.STRUTS2_CONTRACTS, BARE.getShellMethodContracts(ACTION));
         assertSame(MethodContracts.WEBLOGIC_AGENT_SERVLET_CONTEXT_CONTRACTS,
                 BARE.getShellMethodContracts(WEBLOGIC_AGENT_SERVLET_CONTEXT));

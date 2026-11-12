@@ -56,8 +56,6 @@ public class CommandShellToolProvider implements ShellToolProvider {
                 .addShellClass(WEBLOGIC_AGENT_SERVLET_CONTEXT, "com.reajason.javaweb.memshell.shelltool.command.Command")
                 .addShellClass(WAS_AGENT_FILTER_MANAGER, "com.reajason.javaweb.memshell.shelltool.command.Command")
                 .addShellClass(ACTION, "com.reajason.javaweb.memshell.shelltool.command.CommandStruts2Action")
-                .addShellClass(ALIBABA_DUBBO_SERVICE, "com.reajason.javaweb.memshell.shelltool.command.CommandDubboService")
-                .addShellClass(APACHE_DUBBO_SERVICE, "com.reajason.javaweb.memshell.shelltool.command.CommandDubboService")
                 .build();
     }
 

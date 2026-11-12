@@ -165,10 +165,6 @@ public final class MethodContracts {
             signatures("channelRead", "channelRead0", "handlerAdded", "handlerRemoved", "exceptionCaught")
     );
 
-    public static final Set<MethodSignature> DUBBO_CONTRACTS = Collections.unmodifiableSet(
-            signatures("invoke", "handle")
-    );
-
     public static final Set<MethodSignature> STRUTS2_CONTRACTS = Collections.unmodifiableSet(
             signatures("execute", "intercept")
     );
@@ -264,7 +260,7 @@ public final class MethodContracts {
                     // Runnable/RawWebSocket helper
                     "run",
                     "close",
-                    // Struts2 / XXL-Job / Dubbo
+                    // Struts2 / XXL-Job
                     "execute",
                     "intercept",
                     // Object

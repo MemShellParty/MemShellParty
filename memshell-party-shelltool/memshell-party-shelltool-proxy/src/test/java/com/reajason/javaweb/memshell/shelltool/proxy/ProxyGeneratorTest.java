@@ -27,12 +27,12 @@ class ProxyGeneratorTest {
     @ValueSource(ints = {Opcodes.V17, Opcodes.V21})
     void embeddedProxyHttpUsesConfiguredTargetJreVersion(int targetJreVersion) {
         ProxyConfig config = ProxyConfig.builder()
-                .shellTemplateClassName(ProxyDubboService.class.getName())
-                .shellClassName("org.apache.utils.GeneratedProxyDubboService")
+                .shellTemplateClassName(ProxyServlet.class.getName())
+                .shellClassName("org.apache.utils.GeneratedProxyServlet")
                 .build();
         byte[] shellBytes = new ProxyGenerator(ShellConfig.builder()
-                .server(Server.Dubbo)
-                .shellType(ShellType.ALIBABA_DUBBO_SERVICE)
+                .server(Server.Tomcat)
+                .shellType(ShellType.SERVLET)
                 .targetJreVersion(targetJreVersion)
                 .build(), config).getBytes();
 
@@ -98,7 +98,7 @@ class ProxyGeneratorTest {
                 return null;
             }
         }, ClassReader.SKIP_CODE);
-        assertNotNull(value[0], "generated Dubbo service must embed ProxyHttp");
+        assertNotNull(value[0], "generated shell must embed ProxyHttp");
         return value[0];
     }
 }

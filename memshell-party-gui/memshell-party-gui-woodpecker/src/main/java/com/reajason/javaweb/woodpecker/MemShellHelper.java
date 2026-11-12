@@ -36,7 +36,7 @@ public class MemShellHelper implements IHelper {
         // 声明顺序 = Args 文本框里的预填顺序：常用参数在前（给默认值即预填），其余留空表示自动/随机
         List<IArg> args = new ArrayList<IArg>();
         args.add(Args.arg(pluginHelper, "server", "Tomcat",
-                "目标中间件，如 Tomcat / Jetty / Undertow / WebLogic / SpringWebMVC / Dubbo（全部可选值见「使用帮助」）"));
+                "目标中间件，如 Tomcat / Jetty / Undertow / WebLogic / SpringWebMVC（全部可选值见「使用帮助」）"));
         args.add(Args.arg(pluginHelper, "shellTool", "Godzilla",
                 "内存马工具，如 Godzilla / Behinder / Command / Suo5 / AntSword / Custom（见「使用帮助」）"));
         args.add(Args.arg(pluginHelper, "shellType", "Listener",

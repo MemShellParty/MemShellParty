@@ -53,9 +53,6 @@ class ShellTypeSuffixTest {
         assertEquals("WebSocket", ShellTypeSuffix.of(ShellType.JAKARTA_WEBSOCKET));
         assertEquals("WebSocket", ShellTypeSuffix.of(ShellType.RAW_WEBSOCKET));
         assertEquals("WebSocket", ShellTypeSuffix.of(ShellType.JAKARTA_RAW_WEBSOCKET));
-        assertEquals("Service", ShellTypeSuffix.of(ShellType.DUBBO_SERVICE));
-        assertEquals("Service", ShellTypeSuffix.of(ShellType.APACHE_DUBBO_SERVICE));
-        assertEquals("Service", ShellTypeSuffix.of(ShellType.ALIBABA_DUBBO_SERVICE));
     }
 
     @Test

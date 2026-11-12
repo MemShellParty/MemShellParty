@@ -13,7 +13,6 @@ on:
       - 'memshell-party-core/**'
       - '**/memshell/**'
       - '**/memshell-party-packer/**'
-      - '**/dubbo/**'
       - 'tools/**'
       - 'memshell-party-gui/memshell-party-gui-shiro-exploit/**'
 
@@ -90,9 +89,6 @@ jobs:
           - middleware: "geronimo"
             parallelism: 3
             depend_tasks: ":vul:vul-webapp:war"
-          - middleware: "dubbo"
-            parallelism: 1
-            depend_tasks: ":vul:vul-dubbo:dubboProviderFatJars :tools:command:dubboClientClasspath"
     runs-on: ubuntu-22.04
     # 正常 5–15 分钟；挂起时不再占满 GitHub 默认的 6 小时，而是 45 分钟后明确失败
     timeout-minutes: 45
@@ -111,7 +107,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Pre-pull docker images in background
-        if: matrix.cases.middleware != 'dubbo'
         run: |
           SRC_DIR="${{ matrix.cases.src_dir || format('memshell/{0}', matrix.cases.middleware) }}"
           SRC_GLOB="${{ matrix.cases.src_glob || '*' }}"
@@ -122,12 +117,7 @@ jobs:
         run: ./gradlew ${{ matrix.cases.depend_tasks }} --console=plain
 
       - name: Integration Test with gradle
-        if: matrix.cases.middleware != 'dubbo'
         run: ./gradlew :integration-test:test --tests '${{ matrix.cases.test_filter || format('*.memshell.{0}.*', matrix.cases.middleware) }}' --console=plain -PitParallelism=${{ matrix.cases.parallelism }}
-
-      - name: Dubbo Integration Test with gradle
-        if: matrix.cases.middleware == 'dubbo'
-        run: ./gradlew :integration-test:dubboContainerTest --console=plain -PitParallelism=1
 
       - name: Export Integration Test Summary
         uses: mikepenz/action-junit-report@v6
