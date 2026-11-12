@@ -36,7 +36,7 @@ class FullGuiCatalogTest {
             Server.Tomcat, Server.Jetty, Server.Jetty5, Server.Undertow, Server.JBoss,
             Server.Resin, Server.Resin2, Server.WebLogic, Server.WebSphere, Server.GlassFish,
             Server.TongWeb, Server.BES, Server.InforSuite, Server.Apusic,
-            Server.SpringWebMvc, Server.SpringWebFlux, Server.XXLJOB, Server.Struts2, Server.Dubbo);
+            Server.SpringWebMvc, Server.SpringWebFlux, Server.XXLJOB, Server.Struts2);
 
     private static final List<String> ALL_SHELL_TOOLS = Arrays.asList(
             ShellTool.Godzilla, ShellTool.GodzillaSession, ShellTool.Behinder, ShellTool.Command,

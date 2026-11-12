@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Generates every advertised (server, shellTool, shellType) combination in one JVM.
  * <p>
  * This is the guard for generation-time bytecode resolution: a shell template's supertypes
- * (catalina, spring, netty, dubbo, jetty, ...) are resolved as class bytes, never loaded, and
+ * (catalina, spring, netty, jetty, ...) are resolved as class bytes, never loaded, and
  * are compileOnly in the provider modules — so anything missing from this module's runtime
  * classpath only shows up as a generation failure for that one combination.
  *
@@ -82,9 +82,10 @@ class AllPairsGenerationTest {
         // 750 = 744 + 6（WebSphere 新增 javax/jakarta JSR-356 WebSocket，Command/Godzilla/Proxy 各一）
         // 756 = 750 + 6（Jetty 新增 javax/jakarta JSR-356 WebSocket，Command/Godzilla/Proxy 各一）
         // 765 = 756 + 9（InforSuite 新增 javax/jakarta、Apusic 9 新增 javax JSR-356 WebSocket）
-        // 869 = 765 + 104（Proxy 增补 HTTP/PHT、Netty、WebFlux 与 Dubbo 类型）
+        // 869 = 765 + 104（Proxy 增补 HTTP/PHT、Netty 与 WebFlux 类型）
         // 870 = 869 + 1（Tomcat 的 Godzilla 新增 Upgrade）
-        assertEquals(870, combinations.size(), "advertised (server, shellTool, shellType) matrix changed");
+        // 864 = 870 - 6（Dubbo server 及其两个挂载类型移除）
+        assertEquals(864, combinations.size(), "advertised (server, shellTool, shellType) matrix changed");
         assertEquals(Collections.emptyList(), failures, failures.size() + " combination(s) failed to generate");
     }
 

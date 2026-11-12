@@ -17,7 +17,6 @@ object ModuleVersions {
         ":memshell-party-server:memshell-party-server-spring-webflux" to "3.0.0",
         ":memshell-party-server:memshell-party-server-xxljob" to "3.0.0",
         ":memshell-party-server:memshell-party-server-struts2" to "3.0.0",
-        ":memshell-party-server:memshell-party-server-dubbo" to "3.0.0",
         ":memshell-party-shelltool:memshell-party-shelltool-godzilla" to "3.0.0",
         ":memshell-party-shelltool:memshell-party-shelltool-behinder" to "3.0.0",
         ":memshell-party-shelltool:memshell-party-shelltool-command" to "3.1.0",
@@ -25,7 +24,6 @@ object ModuleVersions {
         ":memshell-party-shelltool:memshell-party-shelltool-antsword" to "3.0.0",
         ":memshell-party-shelltool:memshell-party-shelltool-neoregeorg" to "3.0.0",
         ":memshell-party-shelltool:memshell-party-shelltool-proxy" to "3.0.0",
-        ":memshell-party-stub:memshell-party-stub-dubbo" to "3.0.0",
         ":memshell-party-stub:memshell-party-stub-jetty" to "3.0.0",
         ":memshell-party-stub:memshell-party-stub-tomcat" to "3.0.0",
     )

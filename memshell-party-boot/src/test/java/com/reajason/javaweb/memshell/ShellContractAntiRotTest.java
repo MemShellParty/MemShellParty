@@ -45,7 +45,6 @@ class ShellContractAntiRotTest {
         assertContains(MethodContracts.UPGRADE_CONTRACTS,
                 "accept", "getHttpUpgradeName", "getAlpnIdentifier", "getAlpnName",
                 "getProcessor", "getInternalUpgradeHandler");
-        assertContains(MethodContracts.DUBBO_CONTRACTS, "handle");
         assertContains(MethodContracts.INJECTOR_COMMON,
                 "transform", "initChannel", "onChannelInit", "invoke");
         assertContains(MethodContracts.FILTER_CONTRACTS, "equals");
@@ -81,7 +80,6 @@ class ShellContractAntiRotTest {
         // RawWebSocket 的壳是 Filter，helper 按名回调 onStart/onReadText 等入口，改名会断链
         assertShellMethodSurvives("Tomcat", "Command", "RawWebSocket", "doFilter", "init", "onStart", "onReadText");
         assertShellMethodSurvives("Tomcat", "Command", "JakartaRawWebSocket", "doFilter", "init", "onStart", "onReadText");
-        assertShellMethodSurvives("Dubbo", "Command", "ApacheDubboService", "handle");
         assertShellMethodSurvives("TongWeb", "Command", "Valve",
                 "invoke", "isAsyncSupported", "backgroundProcess");
         assertShellMethodSurvives("BES", "Command", "Valve",

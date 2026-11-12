@@ -20,7 +20,7 @@ import static com.reajason.javaweb.memshell.ShellType.*;
  *
  * <p>本示例只适配 servlet-api 相关的 shellType：Filter、Servlet、Listener 及其 Jakarta 变体
  * （Jakarta 变体复用同一份 javax 模板，生成期由 JakartaPostProcessor 改名）。
- * 其余类型（Valve、WebSocket、Agent、Spring、Dubbo、Jetty Handler...）需要各自 server 的
+ * 其余类型（Valve、WebSocket、Agent、Spring、Jetty Handler...）需要各自 server 的
  * 注入器配合，不在本示例范围内 —— 要给某个 server 增加支持时，映射里加上对应 shellType 即可，
  * {@code MemShellRegistry} 会自动按 server 的注入器映射做一次求交集，没有注入器的类型不会对外暴露。
  *

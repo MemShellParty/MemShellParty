@@ -5,6 +5,8 @@ import com.reajason.javaweb.ShellGenerator;
 import com.reajason.javaweb.buddy.TargetJreVersionVisitorWrapper;
 import com.reajason.javaweb.memshell.config.ShellConfig;
 import com.reajason.javaweb.memshell.config.ShellToolConfig;
+import com.reajason.javaweb.memshell.MemShellRegistry;
+import com.reajason.javaweb.memshell.server.AbstractServer;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
@@ -41,7 +43,7 @@ public abstract class ByteBuddyShellGenerator<T extends ShellToolConfig> impleme
     /**
      * Redefine the mapped shell template without loading it into the JVM: the template
      * class file is read as a resource from the tool module's class loader, so template
-     * supertypes (servlet, spring, dubbo APIs) never need to be on the consumer's classpath.
+     * supertypes (servlet, spring APIs) never need to be on the consumer's classpath.
      * <p>
      * The config class and the templates may come from different loaders (an SPI tool loaded by
      * a plugin loader), so the locator falls back like {@code InjectorGenerator} does.
@@ -68,14 +70,27 @@ public abstract class ByteBuddyShellGenerator<T extends ShellToolConfig> impleme
         ClassLoader[] candidates = {
                 shellToolConfig.getClass().getClassLoader(),
                 Thread.currentThread().getContextClassLoader(),
+                // A plugin server may supply the shell template for a built-in tool. The config
+                // class then comes from the tool's loader and cannot see the plugin template;
+                // the server names the loader that sees both its injectors and its shells.
+                serverTemplateClassLoader(),
                 ByteBuddyShellGenerator.class.getClassLoader()};
-        List<ClassLoader> classLoaders = new ArrayList<>(candidates.length);
+        List<ClassLoader> classLoaders = new ArrayList<ClassLoader>(candidates.length);
         for (ClassLoader candidate : candidates) {
             if (candidate != null && !classLoaders.contains(candidate)) {
                 classLoaders.add(candidate);
             }
         }
         return classLoaders;
+    }
+
+    private ClassLoader serverTemplateClassLoader() {
+        try {
+            AbstractServer server = MemShellRegistry.getInstance().getServer(shellConfig.getServer());
+            return server == null ? null : server.getInjectorTemplateClassLoader();
+        } catch (RuntimeException | LinkageError e) {
+            return null;
+        }
     }
 
     @Override

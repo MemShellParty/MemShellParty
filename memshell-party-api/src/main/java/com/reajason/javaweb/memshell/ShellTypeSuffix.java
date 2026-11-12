@@ -57,9 +57,6 @@ public final class ShellTypeSuffix {
         suffixes.put(ShellType.RAW_WEBSOCKET, "WebSocket");
         suffixes.put(ShellType.JAKARTA_RAW_WEBSOCKET, "WebSocket");
         suffixes.put(ShellType.ACTION, "Action");
-        suffixes.put(ShellType.DUBBO_SERVICE, "Service");
-        suffixes.put(ShellType.APACHE_DUBBO_SERVICE, "Service");
-        suffixes.put(ShellType.ALIBABA_DUBBO_SERVICE, "Service");
         SUFFIXES = Collections.unmodifiableMap(suffixes);
     }
 

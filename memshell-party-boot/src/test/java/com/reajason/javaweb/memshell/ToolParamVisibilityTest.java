@@ -20,11 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ToolParamVisibilityTest {
 
     @Test
-    void commandParamNameHidesForWebSocketAndDubbo() {
+    void commandParamNameHidesForWebSocket() {
         assertTrue(visible(ShellTool.Command, "paramName", "Tomcat", "Servlet"));
         assertFalse(visible(ShellTool.Command, "paramName", "Tomcat", "WebSocket"));
         assertFalse(visible(ShellTool.Command, "paramName", "Tomcat", "JakartaWebSocket"));
-        assertFalse(visible(ShellTool.Command, "paramName", "Dubbo", "Servlet"));
     }
 
     @Test
@@ -33,7 +32,6 @@ class ToolParamVisibilityTest {
         assertTrue(visible(ShellTool.Proxy, "headerValue", "SpringWebFlux", "NettyHandler"));
         assertFalse(visible(ShellTool.Proxy, "headerName", "Tomcat", "WebSocket"));
         assertFalse(visible(ShellTool.Proxy, "headerValue", "Tomcat", "RawWebSocket"));
-        assertFalse(visible(ShellTool.Proxy, "headerName", "Dubbo", "AlibabaDubboService"));
     }
 
     /**
@@ -48,7 +46,7 @@ class ToolParamVisibilityTest {
 
         // Command 的加密器/模板与挂载类型无关
         assertTrue(visible(ShellTool.Command, "encryptor", "Tomcat", "WebSocket"));
-        assertTrue(visible(ShellTool.Command, "template", "Dubbo", "Servlet"));
+        assertTrue(visible(ShellTool.Command, "template", "Tomcat", "Servlet"));
     }
 
     /**

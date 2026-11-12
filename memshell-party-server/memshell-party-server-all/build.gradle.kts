@@ -18,7 +18,6 @@ val providers = listOf(
     ":memshell-party-server:memshell-party-server-spring-webflux",
     ":memshell-party-server:memshell-party-server-xxljob",
     ":memshell-party-server:memshell-party-server-struts2",
-    ":memshell-party-server:memshell-party-server-dubbo",
 )
 
 dependencies {

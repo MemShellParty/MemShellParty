@@ -172,9 +172,6 @@ public final class ResultInfoService {
         if (shellType != null && shellType.contains("WebSocket")) {
             return "JAVA_WEBSOCKET_AES_RAW";
         }
-        if (shellType != null && shellType.contains("Dubbo")) {
-            return "DUBBO_XOR_BASE64";
-        }
         return "JAVA_AES_BASE64";
     }
 }

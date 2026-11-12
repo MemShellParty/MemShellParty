@@ -21,7 +21,6 @@ import { FeedbackAlert } from "./feedback-alert";
 
 export function BasicInfo({ generateResult }: Readonly<{ generateResult?: MemShellResult }>) {
   const { t } = useTranslation(["memshell", "common"]);
-  const isDubbo = generateResult?.shellConfig.server === "Dubbo";
   const shellToolConfig = generateResult?.shellToolConfig;
   return (
     <div className="flex flex-col gap-3">
@@ -42,7 +41,7 @@ export function BasicInfo({ generateResult }: Readonly<{ generateResult?: MemShe
                 value={generateResult?.injectorConfig.urlPattern}
               />
             </div>
-            {generateResult?.shellConfig.shellTool !== ShellToolType.Custom && !isDubbo && (
+            {generateResult?.shellConfig.shellTool !== ShellToolType.Custom && (
               <Separator className="my-1" />
             )}
           </>
@@ -96,9 +95,7 @@ export function BasicInfo({ generateResult }: Readonly<{ generateResult?: MemShe
                 text={
                   generateResult?.shellConfig.shellType.includes("WebSocket")
                     ? "JAVA_WEBSOCKET_AES_RAW"
-                    : generateResult?.shellConfig.shellType.includes("Dubbo")
-                      ? "DUBBO_XOR_BASE64"
-                      : "JAVA_AES_BASE64"
+                    : "JAVA_AES_BASE64"
                 }
               />
               <CopyableField
@@ -109,7 +106,7 @@ export function BasicInfo({ generateResult }: Readonly<{ generateResult?: MemShe
               />
             </>
           )}
-          {generateResult?.shellConfig.shellTool === ShellToolType.Command && !isDubbo && (
+          {generateResult?.shellConfig.shellTool === ShellToolType.Command && (
             <Fragment>
               <CopyableField
                 hidden={generateResult?.shellConfig.shellType.includes("WebSocket")}
@@ -154,7 +151,6 @@ export function BasicInfo({ generateResult }: Readonly<{ generateResult?: MemShe
             </>
           )}
           {generateResult?.shellConfig.shellTool === ShellToolType.Proxy &&
-            !isDubbo &&
             !generateResult.shellConfig.shellType.includes("WebSocket") && (
               <CopyableField
                 className="col-span-2"

@@ -56,8 +56,6 @@ public class GodzillaShellToolProvider implements ShellToolProvider {
                 .addShellClass(WEBLOGIC_AGENT_SERVLET_CONTEXT, "com.reajason.javaweb.memshell.shelltool.godzilla.Godzilla")
                 .addShellClass(WAS_AGENT_FILTER_MANAGER, "com.reajason.javaweb.memshell.shelltool.godzilla.Godzilla")
                 .addShellClass(ACTION, "com.reajason.javaweb.memshell.shelltool.godzilla.GodzillaStruts2Action")
-                .addShellClass(ALIBABA_DUBBO_SERVICE, "com.reajason.javaweb.memshell.shelltool.godzilla.GodzillaDubboService")
-                .addShellClass(APACHE_DUBBO_SERVICE, "com.reajason.javaweb.memshell.shelltool.godzilla.GodzillaDubboService")
                 .build();
     }
 

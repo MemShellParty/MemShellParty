@@ -186,7 +186,7 @@ public class MemShellGenerator {
                 && !shellConfig.getShellType().startsWith(ShellType.AGENT);
 
         // 注入器按完整产物组处理。每个类都以其余原始类为扫描输入，双向保护直接方法/字段引用；
-        // 类名保持不变，RawWsHelper 与 Dubbo 的派生类名契约不受影响。
+        // 类名保持不变，RawWsHelper 的派生类名契约不受影响。
         if (obfuscationEnabled && obfuscationScope.includesInjector()) {
             obfuscationInfo.setOriginalInjectorSize(injectorBytes.length);
             byte[] originalInjectorBytes = injectorBytes;
@@ -262,7 +262,7 @@ public class MemShellGenerator {
     }
 
     /**
-     * 辅助类的展示名直接读字节里的内部名（RawWsHelper 按 shell 类名派生、Dubbo 是服务接口），
+     * 辅助类的展示名直接读字节里的内部名（RawWsHelper 按 shell 类名派生），
      * 与各 server 在 {@code postProcessShellBytes} 里生成 helper 时的命名天然一致。
      */
     private static String helperClassName(byte[] helperClassBytes) {

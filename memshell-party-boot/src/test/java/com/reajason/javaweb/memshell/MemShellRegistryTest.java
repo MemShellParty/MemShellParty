@@ -30,10 +30,10 @@ class MemShellRegistryTest {
     @Test
     void testSupportedServers() {
         List<String> supportedServers = registry.getSupportedServers();
-        assertTrue(supportedServers.size() >= 19, "expected all built-in servers, got " + supportedServers);
+        assertTrue(supportedServers.size() >= 18, "expected all built-in servers, got " + supportedServers);
         assertTrue(supportedServers.containsAll(Arrays.asList(
                 Server.Tomcat, Server.Jetty, Server.Jetty5, Server.Undertow, Server.SpringWebMvc,
-                Server.SpringWebFlux, Server.Dubbo, Server.XXLJOB, Server.BES, Server.TongWeb)),
+                Server.SpringWebFlux, Server.XXLJOB, Server.BES, Server.TongWeb)),
                 "missing servers in " + supportedServers);
     }
 

@@ -55,8 +55,6 @@ public class ProxyShellToolProvider implements ShellToolProvider {
                 .addShellClass(WEBLOGIC_AGENT_SERVLET_CONTEXT, "com.reajason.javaweb.memshell.shelltool.proxy.ProxyHttp")
                 .addShellClass(WAS_AGENT_FILTER_MANAGER, "com.reajason.javaweb.memshell.shelltool.proxy.ProxyHttp")
                 .addShellClass(ACTION, "com.reajason.javaweb.memshell.shelltool.proxy.ProxyStruts2Action")
-                .addShellClass(ALIBABA_DUBBO_SERVICE, "com.reajason.javaweb.memshell.shelltool.proxy.ProxyDubboService")
-                .addShellClass(APACHE_DUBBO_SERVICE, "com.reajason.javaweb.memshell.shelltool.proxy.ProxyDubboService")
                 .build();
     }
 

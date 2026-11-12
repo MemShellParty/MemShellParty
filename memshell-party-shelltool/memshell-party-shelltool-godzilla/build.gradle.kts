@@ -9,7 +9,7 @@ dependencies {
     api(project(":memshell-party-core"))
     annotationProcessor(libs.metainf.services)
     compileOnly(libs.metainf.services)
-    // GodzillaNettyHandler: io.netty.*（此前经 dubbo 传递解析，现显式声明）
+    // GodzillaNettyHandler: io.netty.*（此前经传递依赖解析，现显式声明）
     compileOnly(libs.netty.all)
     // GodzillaJettyHandler/Customizer: org.eclipse.jetty.*（编译期桩）
     compileOnly(project(":memshell-party-stub:memshell-party-stub-jetty"))

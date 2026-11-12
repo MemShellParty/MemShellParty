@@ -26,7 +26,7 @@ public class MemShellResult {
     private long shellSize;
     private String shellBytesBase64Str;
     /**
-     * 辅助类（如 RawWebSocket 的 $RawWsHelper、Dubbo 的服务接口）；没有辅助类时全组字段为 null/0
+     * 辅助类（如 RawWebSocket 的 $RawWsHelper）；没有辅助类时全组字段为 null/0
      */
     private String helperClassName;
     private transient byte[] helperBytes;

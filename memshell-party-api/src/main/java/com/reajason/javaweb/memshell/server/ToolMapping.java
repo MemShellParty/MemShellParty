@@ -13,7 +13,7 @@ import java.util.Set;
  * Maps shell types to shell template class names.
  *
  * <p>Templates are referenced by binary name, never as {@link Class} literals: loading a
- * template class would drag its supertypes (servlet, spring, dubbo APIs) onto the
+ * template class would drag its supertypes (servlet, spring APIs) onto the
  * consumer's classpath. Generation resolves templates as bytes via the class loader.
  *
  * @author ReaJason
