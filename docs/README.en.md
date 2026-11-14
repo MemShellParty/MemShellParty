@@ -88,13 +88,15 @@ To try features still in development, grab the `desktop-gui` build artifact from
 
 ### MCP Server (for other agents)
 
-The boot service ships with an MCP server implementing the latest MCP specification (Streamable HTTP transport), so other agents can generate memory shells and echo/probe shells directly over the web endpoint `http://127.0.0.1:8080/mcp`.
+The boot service ships with an MCP server implementing the latest MCP specification (Streamable HTTP transport), so other agents can get a POST request plan for memory shells and echo/probe shells over the web endpoint `http://127.0.0.1:8080/mcp`.
 
 Three tools are exposed:
 
 - `memshell_capabilities`: lists all supported servers, shell tools, shell (injector) types, packers and probe methods (call this first to discover valid values)
-- `generate_memshell`: generates a memory shell (Godzilla, Behinder, AntSword, Suo5, Command, etc.); same arguments as `POST /api/memshell/generate`
-- `generate_probe_shell`: generates an echo/probe shell (DNSLog / ResponseBody / ResponseHeader / Sleep); same arguments as `POST /api/probe/generate`
+- `generate_memshell`: returns a POST request plan (`endpoint` + `body`) for a memory shell (Godzilla, Behinder, AntSword, Suo5, Command, etc.); `body` has the same shape as `POST /api/memshell/generate`
+- `generate_probe_shell`: returns a POST request plan (`endpoint` + `body`) for an echo/probe shell (DNSLog / ResponseBody / ResponseHeader / Sleep); `body` has the same shape as `POST /api/probe/generate`
+
+For both generate tools, the client saves `body` to a file, POSTs it to `endpoint` with curl or another HTTP client, and writes the response to a file; the payload never passes through MCP.
 
 MCP client configuration example:
 

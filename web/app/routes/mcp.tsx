@@ -108,7 +108,12 @@ export default function McpPage() {
     2,
   );
 
-  const steps = [t("workflow.step1"), t("workflow.step2"), t("workflow.step3")];
+  const steps = [
+    t("workflow.step1"),
+    t("workflow.step2"),
+    t("workflow.step3"),
+    t("workflow.step4"),
+  ];
 
   return (
     <HomeLayout {...baseOptions()} links={siteConfig.navLinks}>

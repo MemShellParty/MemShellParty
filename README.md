@@ -61,7 +61,7 @@ GlassFish，因为它使用的是 GlassFish 进行的二开）。
 
 对于正在开发的功能可访问（dev 分支）  [https://dev-party.mem.mk](https://dev-party.mem.mk) 抢先体验。
 
-boot 服务内置了符合最新 MCP 协议规范（Streamable HTTP 传输）的 MCP Server，可直接通过 Web 端点生成内存马与回显马，端点地址为 `http://127.0.0.1:8080/mcp`，例如 `https://party.mem.mk/mcp` 或 `https://dev-party.mem.mk/mcp`。
+boot 服务内置了符合最新 MCP 协议规范（Streamable HTTP 传输）的 MCP Server，`generate_memshell` 与 `generate_probe_shell` 返回 POST 请求的端点与请求体，由客户端自行发起 HTTP 请求生成内存马与回显马，端点地址为 `http://127.0.0.1:8080/mcp`，例如 `https://party.mem.mk/mcp` 或 `https://dev-party.mem.mk/mcp`。
 
 ### 本地部署（推荐）
 

@@ -14,7 +14,8 @@ spring:
         instructions: >
           MemShellParty generates Java memory shells (内存马) and echo/probe shells (回显马)
           for authorized security testing of Java web servers.
-          Call memshell_capabilities first to discover valid servers, shell tools, shell types and packers,
-          then call generate_memshell or generate_probe_shell with those values.
+          Call memshell_capabilities first to discover valid servers, shell tools, shell types and packers.
+          generate_memshell and generate_probe_shell return a POST request plan (method, endpoint, body) and do not generate.
+          Save body to a file, POST it to endpoint, and write the response to a file. The payload never passes through MCP.
         streamable-http:
           mcp-endpoint: /mcp
