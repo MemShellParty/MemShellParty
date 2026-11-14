@@ -1,5 +1,7 @@
 package com.reajason.javaweb.boot.mcp;
 
+import com.reajason.javaweb.boot.dto.MemShellGenerateResponse;
+import com.reajason.javaweb.packer.PackerSupport;
 import com.reajason.javaweb.packer.Packers;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -8,11 +10,21 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author ReaJason
@@ -21,11 +33,13 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MemShellMcpServerTest {
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @LocalServerPort
     private int port;
 
     @Test
-    void shouldListToolsAndGenerateShellsOverStreamableHttp() {
+    void generateToolsReturnRestCallPlansThatGenerateOnPost() {
         HttpClientStreamableHttpTransport transport = HttpClientStreamableHttpTransport
                 .builder("http://localhost:" + port)
                 .endpoint("/mcp")
@@ -54,34 +68,81 @@ class MemShellMcpServerTest {
             assertNotEquals(Boolean.TRUE, capabilities.isError());
             assertFalse(capabilities.content().isEmpty());
 
-            McpSchema.CallToolResult memShell = client.callTool(new McpSchema.CallToolRequest("generate_memshell",
-                    Map.of("request", Map.of(
-                            "shellConfig", Map.of(
-                                    "server", "Tomcat",
-                                    "shellTool", "Godzilla",
-                                    "shellType", "Filter",
-                                    "obfuscation", Map.of("enabled", true)),
-                            "shellToolConfig", Map.of(
-                                    "pass", "pass",
-                                    "key", "key"),
-                            "packer", Packers.SpELSpringGzipJDK17))));
-            assertNotEquals(Boolean.TRUE, memShell.isError(), () -> String.valueOf(memShell.content()));
-            assertFalse(memShell.content().isEmpty());
-            String memShellContent = String.valueOf(memShell.content());
-            assertTrue(memShellContent.contains("org.springframework.expression"), memShellContent);
+            JsonNode memShellPlan = callPlan(client, "generate_memshell", Map.of(
+                    "shellConfig", Map.of(
+                            "server", "Tomcat",
+                            "shellTool", "Godzilla",
+                            "shellType", "Filter",
+                            "obfuscation", Map.of("enabled", true)),
+                    "shellToolConfig", Map.of(
+                            "pass", "pass",
+                            "key", "key"),
+                    "packer", Packers.SpELSpringGzipJDK17));
+            assertEquals("POST", memShellPlan.path("method").asText());
+            String memShellEndpoint = memShellPlan.path("endpoint").asText();
+            assertTrue(memShellEndpoint.endsWith("/api/memshell/generate"), memShellEndpoint);
+            assertTrue(memShellEndpoint.startsWith("http://localhost:" + port), memShellEndpoint);
+            assertEquals("Tomcat", memShellPlan.path("body").path("shellConfig").path("server").asText());
+            String memShellPlanJson = memShellPlan.toString();
+            assertFalse(memShellPlanJson.contains("packResult"), memShellPlanJson);
+            assertFalse(memShellPlanJson.contains("shellBytesBase64Str"), memShellPlanJson);
+            assertFalse(memShellPlanJson.contains("probeShellResult"), memShellPlanJson);
 
-            McpSchema.CallToolResult probeShell = client.callTool(new McpSchema.CallToolRequest("generate_probe_shell",
-                    Map.of("request", Map.of(
-                            "probeConfig", Map.of(
-                                    "probeMethod", "ResponseBody",
-                                    "probeContent", "Command",
-                                    "targetJreVersion", 50),
-                            "probeContentConfig", Map.of(
-                                    "server", "Tomcat",
-                                    "reqParamName", "cmd"),
-                            "packer", Packers.DefaultBase64))));
-            assertNotEquals(Boolean.TRUE, probeShell.isError(), () -> String.valueOf(probeShell.content()));
-            assertFalse(probeShell.content().isEmpty());
+            ResponseEntity<MemShellGenerateResponse> memShellResponse =
+                    postPlan(memShellEndpoint, memShellPlan.path("body"), MemShellGenerateResponse.class);
+            assertEquals(HttpStatus.OK, memShellResponse.getStatusCode());
+            assertNotNull(memShellResponse.getBody());
+            String packResult = memShellResponse.getBody().getPackResult();
+            assertNotNull(packResult);
+            assertFalse(packResult.isBlank());
+            String injectorClassName = memShellResponse.getBody().getMemShellResult()
+                    .getInjectorConfig().getInjectorClassName();
+            assertTrue(PackerSupport.isSpringExpressionClassName(injectorClassName), injectorClassName);
+
+            JsonNode probeShellPlan = callPlan(client, "generate_probe_shell", Map.of(
+                    "probeConfig", Map.of(
+                            "probeMethod", "ResponseBody",
+                            "probeContent", "Command",
+                            "targetJreVersion", 50),
+                    "probeContentConfig", Map.of(
+                            "server", "Tomcat",
+                            "reqParamName", "cmd"),
+                    "packer", Packers.DefaultBase64));
+            assertEquals("POST", probeShellPlan.path("method").asText());
+            String probeShellEndpoint = probeShellPlan.path("endpoint").asText();
+            assertTrue(probeShellEndpoint.endsWith("/api/probe/generate"), probeShellEndpoint);
+            assertTrue(probeShellEndpoint.startsWith("http://localhost:" + port), probeShellEndpoint);
+            String probeShellPlanJson = probeShellPlan.toString();
+            assertFalse(probeShellPlanJson.contains("packResult"), probeShellPlanJson);
+            assertFalse(probeShellPlanJson.contains("shellBytesBase64Str"), probeShellPlanJson);
+            assertFalse(probeShellPlanJson.contains("probeShellResult"), probeShellPlanJson);
+
+            ResponseEntity<String> probeShellResponse =
+                    postPlan(probeShellEndpoint, probeShellPlan.path("body"), String.class);
+            assertEquals(HttpStatus.OK, probeShellResponse.getStatusCode());
+            assertNotNull(probeShellResponse.getBody());
+            JsonNode probeShellResult = objectMapper.readTree(probeShellResponse.getBody());
+            assertFalse(probeShellResult.path("packResult").asText().isBlank());
+            assertFalse(probeShellResult.path("probeShellResult").path("shellClassName").asText().isBlank());
         }
+    }
+
+    private JsonNode callPlan(McpSyncClient client, String toolName, Map<String, Object> request) {
+        McpSchema.CallToolResult result = client.callTool(
+                new McpSchema.CallToolRequest(toolName, Map.of("request", request)));
+        assertNotEquals(Boolean.TRUE, result.isError(), () -> String.valueOf(result.content()));
+        assertFalse(result.content().isEmpty());
+        return objectMapper.readTree(((McpSchema.TextContent) result.content().get(0)).text());
+    }
+
+    private static <T> ResponseEntity<T> postPlan(String endpoint, JsonNode body, Class<T> responseType) {
+        return RestClient.builder()
+                .build()
+                .post()
+                .uri(endpoint)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body.toString())
+                .retrieve()
+                .toEntity(responseType);
     }
 }

@@ -1,10 +1,8 @@
 package com.reajason.javaweb.boot.mcp;
 
+import com.reajason.javaweb.InvalidInputException;
 import com.reajason.javaweb.boot.dto.MemShellGenerateRequest;
-import com.reajason.javaweb.boot.dto.MemShellGenerateResponse;
 import com.reajason.javaweb.boot.dto.ProbeShellGenerateRequest;
-import com.reajason.javaweb.boot.dto.ProbeShellGenerateResponse;
-import com.reajason.javaweb.boot.service.GenerationService;
 import com.reajason.javaweb.memshell.MemShellGenerator;
 import com.reajason.javaweb.memshell.PackerRegistry;
 import com.reajason.javaweb.memshell.ToolConfigFactory;
@@ -23,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * MCP tools that let other agents generate Java memory shells (内存马)
+ * MCP tools that return REST call plans for generating Java memory shells (内存马)
  * and echo/probe shells (回显马) for authorized security testing.
  *
  * @author ReaJason
@@ -32,11 +30,11 @@ import java.util.Map;
 @Component
 public class MemShellMcpTools {
 
-    private final GenerationService generationService;
+    private final RestBaseUrlProvider restBaseUrlProvider;
     private final MemShellGenerator memShellGenerator;
 
-    public MemShellMcpTools(GenerationService generationService, MemShellGenerator memShellGenerator) {
-        this.generationService = generationService;
+    public MemShellMcpTools(RestBaseUrlProvider restBaseUrlProvider, MemShellGenerator memShellGenerator) {
+        this.restBaseUrlProvider = restBaseUrlProvider;
         this.memShellGenerator = memShellGenerator;
     }
 
@@ -60,8 +58,12 @@ public class MemShellMcpTools {
     }
 
     @McpTool(name = "generate_memshell", description = """
-            Generate a Java memory shell (内存马): a fileless webshell injected into a running Java web server, \
-            for authorized penetration testing. The request argument mirrors the REST API POST /api/memshell/generate: \
+            Build a POST request plan for generating a Java memory shell (内存马): a fileless webshell injected \
+            into a running Java web server, for authorized penetration testing. This tool does not generate the \
+            shell and never returns the payload or base64 class bytes. The client must save body to a file, POST \
+            it to endpoint with curl or another HTTP client, and write the response to a file. This tool requires \
+            an HTTP client; a chat-only client cannot use it. \
+            The request argument is the JSON body for the REST API POST /api/memshell/generate: \
             {"shellConfig": {"server": "Tomcat", "shellTool": "Godzilla", "shellType": "Filter", "targetJreVersion": 50, \
             "shrink": true, "debug": false}, "injectorConfig": {"urlPattern": "/*"}, "shellToolConfig": {...}, "packer": "DefaultBase64"}. \
             server/shellTool/shellType must come from memshell_capabilities (e.g. server=Tomcat, shellTool=Godzilla, shellType=Filter). \
@@ -80,18 +82,25 @@ public class MemShellMcpTools {
             or MEMSHELL (main shell only). \
             packer picks the payload format: use a name listed under packers in memshell_capabilities \
             (a category's children are the concrete variants; e.g. DefaultBase64, JSP, ScriptEngine, JavaDeserialize). \
-            Leave it blank to return the raw injector Base64 without any packer. \
-            Returns the shell/injector class names, base64-encoded class bytes and the packed payload string.""")
-    public MemShellGenerateResponse generateMemShell(
-            @McpToolParam(description = "Memory shell generation request, same JSON structure as POST /api/memshell/generate")
+            Leave it blank to produce the raw injector Base64 without any packer. \
+            Returns {"method": "POST", "endpoint": "<absolute base URL>/api/memshell/generate", "body": request}. \
+            body is the request unchanged; the generated payload appears only in the response file.""")
+    public RestCallPlan<MemShellGenerateRequest> generateMemShell(
+            @McpToolParam(description = "Request body for POST /api/memshell/generate; returned unchanged as body in the plan")
             MemShellGenerateRequest request) {
-        return generationService.generateMemShell(request);
+        if (request == null) {
+            throw new InvalidInputException("request is required");
+        }
+        return new RestCallPlan<>("POST", restBaseUrlProvider.get() + "/api/memshell/generate", request);
     }
 
     @McpTool(name = "generate_probe_shell", description = """
-            Generate an echo/probe shell (回显马): a minimal in-memory shell used to verify that memory-shell injection \
-            works on a target before deploying a full webshell, for authorized penetration testing. \
-            The request argument mirrors the REST API POST /api/probe/generate: \
+            Build a POST request plan for generating an echo/probe shell (回显马): a minimal in-memory shell used to \
+            verify that memory-shell injection works on a target before deploying a full webshell, for authorized \
+            penetration testing. This tool does not generate the shell and never returns the payload or base64 class \
+            bytes. The client must save body to a file, POST it to endpoint with curl or another HTTP client, and \
+            write the response to a file. This tool requires an HTTP client; a chat-only client cannot use it. \
+            The request argument is the JSON body for the REST API POST /api/probe/generate: \
             {"probeConfig": {"probeMethod": "ResponseBody", "probeContent": "Command", "targetJreVersion": 50}, \
             "probeContentConfig": {...}, "packer": "DefaultBase64"}. \
             probeMethod picks the verification channel: DNSLog -> out-of-band DNS callback, probeContentConfig needs \
@@ -114,10 +123,14 @@ public class MemShellMcpTools {
             probeConfig.obfuscation enables class obfuscation (disabled by default), same structure as generate_memshell. \
             SpEL-based packers automatically disable obfuscation to respect the 10000-character expression limit; \
             SpringGzipJDK17 packers enforce org.springframework.expression as the probe class package. \
-            Returns the probe class name, base64-encoded class bytes and the packed payload string.""")
-    public ProbeShellGenerateResponse generateProbeShell(
-            @McpToolParam(description = "Probe (echo) shell generation request, same JSON structure as POST /api/probe/generate")
+            Returns {"method": "POST", "endpoint": "<absolute base URL>/api/probe/generate", "body": request}. \
+            body is the request unchanged; the generated payload appears only in the response file.""")
+    public RestCallPlan<ProbeShellGenerateRequest> generateProbeShell(
+            @McpToolParam(description = "Request body for POST /api/probe/generate; returned unchanged as body in the plan")
             ProbeShellGenerateRequest request) {
-        return generationService.generateProbeShell(request);
+        if (request == null) {
+            throw new InvalidInputException("request is required");
+        }
+        return new RestCallPlan<>("POST", restBaseUrlProvider.get() + "/api/probe/generate", request);
     }
 }

@@ -310,7 +310,7 @@ byte[] jarBytes = ((JarPacker) PackerRegistry.getInstance().get(Packers.AgentJar
         .packBytes(JarPackerConfig.from(result));
 ```
 
-MCP 通过 `memshell_capabilities` 查询当前可用的服务端、工具、挂载类型与打包方式，再调用 `generate_memshell`，参数与 REST 一致。
+MCP 通过 `memshell_capabilities` 查询当前可用的服务端、工具、挂载类型与打包方式，再调用 `generate_memshell` 返回 `endpoint` 与 `body`，由客户端 POST 到该端点。`body` 参数与 REST 一致。
 
 ### 参数说明
 
