@@ -12,8 +12,11 @@ export interface DecompiledClass {
   lines: TokenLine[];
 }
 
+export type DecompileTarget = "shell" | "helper" | "injector";
+
 export interface DecompileRequest {
   id: number;
+  target?: DecompileTarget;
   shellClassName: string;
   shellBytesBase64: string;
   helperClassName?: string;
@@ -101,6 +104,7 @@ self.onmessage = async (event: MessageEvent<DecompileRequest>) => {
     helperBytesBase64,
     injectorClassName,
     injectorBytesBase64,
+    target = "shell",
   } = event.data;
   try {
     const classes = new Map<string, Uint8Array>([
@@ -114,13 +118,18 @@ self.onmessage = async (event: MessageEvent<DecompileRequest>) => {
     if (hasInjector) {
       classes.set(toJvmClassName(injectorClassName), base64ToBytes(injectorBytesBase64));
     }
-    const shell = await decompileClass(toJvmClassName(shellClassName), classes);
-    const helper = hasHelper
-      ? await decompileClass(toJvmClassName(helperClassName), classes)
-      : undefined;
-    const injector = hasInjector
-      ? await decompileClass(toJvmClassName(injectorClassName), classes)
-      : undefined;
+    let shell: DecompiledClass | undefined;
+    let helper: DecompiledClass | undefined;
+    let injector: DecompiledClass | undefined;
+    if (target === "shell") {
+      shell = await decompileClass(toJvmClassName(shellClassName), classes);
+    } else if (target === "helper") {
+      if (!hasHelper) throw new Error("helper class is unavailable");
+      helper = await decompileClass(toJvmClassName(helperClassName), classes);
+    } else {
+      if (!hasInjector) throw new Error("injector class is unavailable");
+      injector = await decompileClass(toJvmClassName(injectorClassName), classes);
+    }
     self.postMessage({ id, shell, helper, injector } satisfies DecompileResponse);
   } catch (error) {
     self.postMessage({

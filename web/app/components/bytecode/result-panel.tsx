@@ -30,6 +30,7 @@ export function BytecodeResultPanel({
           shellBytesBase64Str: input.classBytesBase64Str,
         }
       : undefined,
+    activeTab === "original" ? "shell" : undefined,
   );
   const transformed = useDecompiledSources(
     result
@@ -38,6 +39,7 @@ export function BytecodeResultPanel({
           shellBytesBase64Str: result.classBytesBase64Str,
         }
       : undefined,
+    activeTab === "transformed" ? "shell" : undefined,
   );
 
   return (
@@ -57,7 +59,7 @@ export function BytecodeResultPanel({
           </>
         )}
       </TabsList>
-      <TabsContent value="original" className="mt-4 xl:flex xl:min-h-0 xl:flex-col" keepMounted>
+      <TabsContent value="original" className="mt-4 xl:flex xl:min-h-0 xl:flex-col">
         {input ? (
           <BytecodeClassResult
             result={input}
@@ -77,11 +79,7 @@ export function BytecodeResultPanel({
       </TabsContent>
       {result && (
         <>
-          <TabsContent
-            value="transformed"
-            className="mt-4 xl:flex xl:min-h-0 xl:flex-col"
-            keepMounted
-          >
+          <TabsContent value="transformed" className="mt-4 xl:flex xl:min-h-0 xl:flex-col">
             <BytecodeClassResult
               result={result}
               source={transformed.sources.shell}

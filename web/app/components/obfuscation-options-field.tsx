@@ -202,11 +202,11 @@ export function ObfuscationOptionsField<T extends ObfuscationFormValues>({
             render={({ field }) => (
               <Field>
                 <FieldContent>
-                  <div className="flex items-center justify-between gap-2">
-                    <FieldLabel htmlFor="obfuscationOptions">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <FieldLabel htmlFor="obfuscationOptions" className="min-w-0">
                       {t("common:obfuscation.options")}
                     </FieldLabel>
-                    <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center justify-end gap-1">
                       <ObfuscationOptionsReference />
                       {customCount > 0 && (
                         <Button

@@ -7,7 +7,14 @@ description: 控制器，创建独特的 entrypoint 访问路径
 
 [前面](/docs/springweb#spring-webmvc) 我们有说 WebMVC Controller 控制器实际上就是 Handler，并且由 HandlerMapping 管理着。我们在 getHandler 打断点看一下我们常用的 Spring Boot2 中所拥有的 HandlerMapping 有哪些。
 
-![spring-handler-mappings](../images/spring-handler-mappings.png)
+<img
+  src="../images/spring-handler-mappings.png"
+  alt="spring-handler-mappings"
+  width={2534}
+  height={730}
+  loading="eager"
+  fetchPriority="high"
+/>
 
 1. **org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping**：为使用 @Controller 和 @RequestMapping 类和方法创建 HandlerMethod。
 2. **org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping**：将 beanName 以 `/` 开头的 bean 注册为 Handler。
