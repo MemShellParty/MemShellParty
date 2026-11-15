@@ -2,7 +2,7 @@ import type { TokenLine } from "@/lib/decompile/decompile.worker";
 
 import { memo, type ReactNode } from "react";
 
-import { CopyMenuButton, type CopyOption } from "@/components/code-viewer";
+import { CopyMenuButton, type CopyOption } from "@/components/copy-menu-button";
 import { cn } from "@/lib/utils";
 
 /** material-dark palette (react-syntax-highlighter prism theme) */

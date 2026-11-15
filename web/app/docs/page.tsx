@@ -21,10 +21,15 @@ export async function loader({ params }: Route.LoaderArgs) {
   const page = source.getPage(slugs);
   if (!page) throw new Response("Not found", { status: 404 });
 
+  const [pageTree] = await Promise.all([
+    source.serializePageTree(source.getPageTree()),
+    page.data.preload(),
+  ]);
+
   return {
     path: page.path,
     markdownUrl: getPageMarkdownUrl(page).url,
-    pageTree: await source.serializePageTree(source.getPageTree()),
+    pageTree,
   };
 }
 

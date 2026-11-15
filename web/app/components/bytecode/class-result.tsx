@@ -4,9 +4,9 @@ import type { BytecodeClassResponse } from "@/types/bytecode";
 import { DownloadIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { RESULT_VIEWER_HEIGHT } from "@/components/code-viewer";
 import DecompiledCodeViewer from "@/components/decompiled-code-viewer";
 import { Button } from "@/components/ui/button";
+import { RESULT_VIEWER_HEIGHT } from "@/components/viewer-layout";
 import { downloadBytes, formatBytes } from "@/lib/utils";
 
 export function BytecodeClassResult({

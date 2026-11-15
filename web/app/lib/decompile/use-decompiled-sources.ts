@@ -1,4 +1,9 @@
-import type { DecompiledClass, DecompileRequest, DecompileResponse } from "./decompile.worker";
+import type {
+  DecompiledClass,
+  DecompileRequest,
+  DecompileResponse,
+  DecompileTarget,
+} from "./decompile.worker";
 
 import { useEffect, useState } from "react";
 
@@ -66,7 +71,11 @@ let worker: Worker | null = null;
 let nextId = 0;
 const pending = new Map<
   number,
-  { resolve: (value: DecompiledSources) => void; reject: (reason: Error) => void }
+  {
+    target: DecompileTarget;
+    resolve: (value: DecompiledSources) => void;
+    reject: (reason: Error) => void;
+  }
 >();
 
 function getWorker() {
@@ -77,10 +86,11 @@ function getWorker() {
       const entry = pending.get(id);
       if (!entry) return;
       pending.delete(id);
-      if (error || !shell) {
+      const sources = { shell: shell ?? null, helper: helper ?? null, injector: injector ?? null };
+      if (error || !sources[entry.target]) {
         entry.reject(new Error(error ?? "decompile failed"));
       } else {
-        entry.resolve({ shell, helper: helper ?? null, injector: injector ?? null });
+        entry.resolve(sources);
       }
     };
     worker.onerror = (event) => {
@@ -95,28 +105,44 @@ function getWorker() {
 function decompileInWorker(request: Omit<DecompileRequest, "id">) {
   return new Promise<DecompiledSources>((resolve, reject) => {
     const id = nextId++;
-    pending.set(id, { resolve, reject });
+    const target = request.target ?? "shell";
+    pending.set(id, { target, resolve, reject });
     getWorker().postMessage({ ...request, id } satisfies DecompileRequest);
   });
 }
 
-export function useDecompiledSources(generateResult: DecompileInput | undefined) {
+export function useDecompiledSources(
+  generateResult: DecompileInput | undefined,
+  target?: DecompileTarget,
+) {
   const shellClassName = generateResult?.shellClassName;
   const shellBytesBase64 = generateResult?.shellBytesBase64Str;
   const helperClassName = generateResult?.helperClassName;
   const helperBytesBase64 = generateResult?.helperBytesBase64Str;
   const injectorClassName = generateResult?.injectorClassName;
   const injectorBytesBase64 = generateResult?.injectorBytesBase64Str;
+  const targetClassName =
+    target === "helper"
+      ? helperClassName
+      : target === "injector"
+        ? injectorClassName
+        : shellClassName;
+  const targetBytesBase64 =
+    target === "helper"
+      ? helperBytesBase64
+      : target === "injector"
+        ? injectorBytesBase64
+        : shellBytesBase64;
 
   const [state, setState] = useState<DecompileState>(IDLE);
 
   useEffect(() => {
-    if (!shellClassName || !shellBytesBase64) {
+    if (!target || !shellClassName || !shellBytesBase64 || !targetClassName || !targetBytesBase64) {
       setState(IDLE);
       return;
     }
 
-    const key = cacheKey(shellBytesBase64, helperBytesBase64 ?? "", injectorBytesBase64 ?? "");
+    const key = `${target}:${cacheKey(shellBytesBase64, helperBytesBase64 ?? "", injectorBytesBase64 ?? "")}`;
     const cached = cacheGet(key);
     if (cached) {
       setState({ sources: cached, isDecompiling: false, error: null });
@@ -131,6 +157,7 @@ export function useDecompiledSources(generateResult: DecompileInput | undefined)
     });
 
     decompileInWorker({
+      target,
       shellClassName,
       shellBytesBase64,
       helperClassName,
@@ -162,6 +189,9 @@ export function useDecompiledSources(generateResult: DecompileInput | undefined)
     injectorClassName,
     shellBytesBase64,
     shellClassName,
+    target,
+    targetBytesBase64,
+    targetClassName,
   ]);
 
   return state;

@@ -4,8 +4,9 @@ import { DownloadIcon } from "lucide-react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 
-import CodeViewer, { RESULT_VIEWER_HEIGHT } from "@/components/code-viewer";
+import CodeViewer from "@/components/code-viewer";
 import { Button } from "@/components/ui/button";
+import { RESULT_VIEWER_HEIGHT } from "@/components/viewer-layout";
 import { base64ToBytes, downloadBytes, downloadContent } from "@/lib/utils";
 
 import { AgentResult } from "./agent";

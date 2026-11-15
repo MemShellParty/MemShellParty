@@ -2,6 +2,7 @@ import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { fumadocsMdx } from "fumadocs-mdx/vite";
 import { defineConfig, loadEnv } from "vite";
+import { imagetools } from "vite-imagetools";
 import devtoolsJson from "vite-plugin-devtools-json";
 
 export default defineConfig(({ command, mode }) => {
@@ -14,7 +15,7 @@ export default defineConfig(({ command, mode }) => {
     // Bind it explicitly to IPv4 so `localhost` resolves to the address being listened on in Docker.
     preview: { host: "127.0.0.1" },
     base: isDev || !contextPath ? "/" : `${contextPath}/`,
-    plugins: [fumadocsMdx(), tailwindcss(), reactRouter(), devtoolsJson()],
+    plugins: [fumadocsMdx(), imagetools(), tailwindcss(), reactRouter(), devtoolsJson()],
     resolve: {
       tsconfigPaths: true,
       alias: isDev ? undefined : { "react-dom/server": "react-dom/server.node" },

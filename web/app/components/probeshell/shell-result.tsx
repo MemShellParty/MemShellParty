@@ -40,7 +40,11 @@ export default function ShellResult({
   historyPanel?: ReactNode;
 }>) {
   const { t } = useTranslation(["common", "probeshell"]);
-  const { sources, isDecompiling, error } = useDecompiledSources(generateResult);
+  const [activeResultTab, setActiveResultTab] = useState("packResult");
+  const { sources, isDecompiling, error } = useDecompiledSources(
+    generateResult,
+    activeResultTab === "shell" ? "shell" : undefined,
+  );
 
   const [activeTab, setActiveTab] = useState<string>(
     generateResult ? "generateResult" : "quickUsage",
@@ -111,7 +115,7 @@ export default function ShellResult({
           )}
           <BasicInfo generateResult={generateResult} />
 
-          <Tabs defaultValue="packResult">
+          <Tabs value={activeResultTab} onValueChange={setActiveResultTab}>
             <TabsList>
               <TabsTrigger value="packResult">{t("common:packResult")}</TabsTrigger>
               <TabsTrigger value="shell">{t("probeshell:shellClass")}</TabsTrigger>
@@ -153,7 +157,7 @@ export default function ShellResult({
                 />
               )}
             </TabsContent>
-            <TabsContent value="shell" className="mt-4" keepMounted>
+            <TabsContent value="shell" className="mt-4">
               <DecompiledCodeViewer
                 copyLabel={t("common:copy")}
                 copyOptions={[

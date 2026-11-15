@@ -1,9 +1,10 @@
 import type { Route } from "./+types/root";
 
 import { RootProvider } from "fumadocs-ui/provider/react-router";
-import { I18nextProvider } from "react-i18next";
+import { lazy } from "react";
 
 import "./app.css";
+import { I18nextProvider } from "react-i18next";
 import {
   isRouteErrorResponse,
   Links,
@@ -13,13 +14,14 @@ import {
   ScrollRestoration,
 } from "react-router";
 
-import SearchDialog from "@/components/search";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { Toaster } from "@/components/ui/sonner";
 import { env } from "@/config";
 
 import i18n from "./i18n/i18n";
 import { QueryProvider } from "./providers/query-client-provider";
+
+const SearchDialog = lazy(() => import("@/components/search"));
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -44,7 +46,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="flex min-h-screen flex-col">
-        <RootProvider search={{ SearchDialog }}>
+        <RootProvider search={{ SearchDialog, preload: false }}>
           <Toaster />
           <QueryProvider>
             <I18nextProvider i18n={i18n}>{children}</I18nextProvider>

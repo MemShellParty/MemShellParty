@@ -5,11 +5,11 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { RESULT_VIEWER_HEIGHT } from "@/components/code-viewer";
 import DecompiledCodeViewer from "@/components/decompiled-code-viewer";
 import { QuickUsage } from "@/components/memshell/quick-usage";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RESULT_VIEWER_HEIGHT } from "@/components/viewer-layout";
 import { useDecompiledSources } from "@/lib/decompile/use-decompiled-sources";
 import { formatRelativeTime } from "@/lib/generation-history";
 import { downloadBytes } from "@/lib/utils";
@@ -36,7 +36,12 @@ export default function ShellResult({
   historyPanel?: ReactNode;
 }>) {
   const { t } = useTranslation(["common", "memshell"]);
-  const { sources, isDecompiling, error } = useDecompiledSources(generateResult);
+  const [activeResultTab, setActiveResultTab] = useState("packResult");
+  const decompileTarget =
+    activeResultTab === "shell" || activeResultTab === "helper" || activeResultTab === "injector"
+      ? activeResultTab
+      : undefined;
+  const { sources, isDecompiling, error } = useDecompiledSources(generateResult, decompileTarget);
 
   const [activeTab, setActiveTab] = useState<string>(
     generateResult ? "generateResult" : "quickUsage",
@@ -100,7 +105,11 @@ export default function ShellResult({
           )}
           <BasicInfo generateResult={generateResult} />
 
-          <Tabs defaultValue="packResult" className="xl:min-h-0 xl:flex-1">
+          <Tabs
+            value={activeResultTab}
+            onValueChange={setActiveResultTab}
+            className="xl:min-h-0 xl:flex-1"
+          >
             <TabsList className="shrink-0">
               <TabsTrigger value="packResult">{t("common:packResult")}</TabsTrigger>
               <TabsTrigger value="shell">{t("memshell:shellClass")}</TabsTrigger>
@@ -117,7 +126,7 @@ export default function ShellResult({
                 onUse={onUse}
               />
             </TabsContent>
-            <TabsContent value="shell" className="mt-4 xl:min-h-0" keepMounted>
+            <TabsContent value="shell" className="mt-4 xl:min-h-0">
               <DecompiledCodeViewer
                 copyLabel={t("common:copy")}
                 copyOptions={[
@@ -161,7 +170,7 @@ export default function ShellResult({
               />
             </TabsContent>
             {helperBytesBase64 && (
-              <TabsContent value="helper" className="mt-4 xl:min-h-0" keepMounted>
+              <TabsContent value="helper" className="mt-4 xl:min-h-0">
                 <DecompiledCodeViewer
                   copyLabel={t("common:copy")}
                   copyOptions={[
@@ -200,7 +209,7 @@ export default function ShellResult({
                 />
               </TabsContent>
             )}
-            <TabsContent value="injector" className="mt-4 xl:min-h-0" keepMounted>
+            <TabsContent value="injector" className="mt-4 xl:min-h-0">
               <DecompiledCodeViewer
                 copyLabel={t("common:copy")}
                 copyOptions={[
