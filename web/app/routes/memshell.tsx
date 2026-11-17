@@ -30,6 +30,7 @@ import {
   useYupValidationResolver,
 } from "@/types/schema";
 import { fetchJson } from "@/utils/fetch-json";
+import { preserveCurrentQuery } from "@/utils/preserve-query";
 import {
   missingRequiredRemoteFields,
   restoreMemShellFormValues,
@@ -81,7 +82,8 @@ const fetchPackerConfig = () => fetchJson<PackerConfig>(`${env.API_URL}/api/conf
 const fetchShellToolConfigs = () =>
   fetchJson<Array<ShellToolConfigEntry>>(`${env.API_URL}/api/config/shelltool/configs`);
 
-const fetchServerMetadata = () => fetchJson<Array<ServerMetadata>>(`${env.API_URL}/api/config/servers`);
+const fetchServerMetadata = () =>
+  fetchJson<Array<ServerMetadata>>(`${env.API_URL}/api/config/servers`);
 
 export default function MemShellPage() {
   const mainConfigQuery = useQuery<MainConfig>({
@@ -196,7 +198,7 @@ export default function MemShellPage() {
           return;
         }
         const postData = transformToPostData(data, shellToolConfigs);
-        const response = await fetch(`${env.API_URL}/api/memshell/generate`, {
+        const response = await fetch(preserveCurrentQuery(`${env.API_URL}/api/memshell/generate`), {
           method: "POST",
           headers: jsonHeaders,
           body: JSON.stringify(postData),

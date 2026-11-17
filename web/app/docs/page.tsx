@@ -11,10 +11,12 @@ import {
   ViewOptionsPopover,
 } from "fumadocs-ui/layouts/docs/page";
 import { use } from "react";
+import { useLocation } from "react-router";
 
 import { useMDXComponents } from "@/components/mdx";
 import { baseOptions } from "@/lib/layout.shared";
 import { docs, getPageMarkdownUrl, source } from "@/lib/source";
+import { preserveQuery } from "@/utils/preserve-query";
 
 export async function loader({ params }: Route.LoaderArgs) {
   const slugs = params["*"].split("/").filter((v) => v.length > 0);
@@ -34,8 +36,10 @@ export async function loader({ params }: Route.LoaderArgs) {
 }
 
 function Content({ path, markdownUrl }: { path: string; markdownUrl: string }) {
+  const location = useLocation();
   const page = docs.getPage(path);
   if (!page) throw new Error(`unknown page: ${path}`);
+  const authenticatedMarkdownUrl = preserveQuery(markdownUrl, location);
 
   // content is loaded lazily, call `page.preload()` in the loader to avoid suspending
   const { toc } = use(page.load());
@@ -48,9 +52,9 @@ function Content({ path, markdownUrl }: { path: string; markdownUrl: string }) {
       <DocsTitle>{page.title}</DocsTitle>
       <DocsDescription>{page.description}</DocsDescription>
       <div className="-mt-4 flex flex-row items-center gap-2 border-b pb-6">
-        <MarkdownCopyButton markdownUrl={markdownUrl} />
+        <MarkdownCopyButton markdownUrl={authenticatedMarkdownUrl} />
         <ViewOptionsPopover
-          markdownUrl={markdownUrl}
+          markdownUrl={authenticatedMarkdownUrl}
           githubUrl={`https://github.com/MemShellParty/MemShellParty/blob/master/web/content/docs/${path}`}
         />
       </div>

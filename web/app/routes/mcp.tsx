@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
 import { ArrowRight, ListChecks, Plug, Radar, WandSparkles } from "lucide-react";
@@ -11,6 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { env } from "@/config";
 import { siteConfig } from "@/lib/config";
 import { baseOptions } from "@/lib/layout.shared";
+import { fetchJson } from "@/utils/fetch-json";
+
+interface AuthClientConfig {
+  mode: "OFF" | "ADMIN" | "PLATFORM";
+  authorization?: string;
+}
 
 const apiBase = (env.API_URL ?? "").replace(/\/+$/, "");
 
@@ -67,6 +74,22 @@ export default function McpPage() {
   const { t } = useTranslation(["mcp", "common"]);
   const [mcpUrl, setMcpUrl] = useState(() => resolveMcpUrl());
   const copyLabel = t("common:copy");
+  const clientConfigQuery = useQuery<AuthClientConfig>({
+    queryKey: ["authClientConfig"],
+    queryFn: () =>
+      fetchJson<AuthClientConfig>(`${env.API_URL}/api/auth/client-config`, { cache: "no-store" }),
+  });
+  const authorization =
+    clientConfigQuery.data?.mode === "ADMIN" ? clientConfigQuery.data.authorization : undefined;
+  const authStatus = clientConfigQuery.isPending
+    ? "clients.authPending"
+    : authorization
+      ? "clients.adminStatus"
+      : clientConfigQuery.isError || clientConfigQuery.data?.mode === "ADMIN"
+        ? "clients.authError"
+        : clientConfigQuery.data?.mode === "PLATFORM"
+          ? "clients.platformStatus"
+          : null;
 
   useEffect(() => {
     setMcpUrl(resolveMcpUrl(window.location.origin));
@@ -91,19 +114,49 @@ export default function McpPage() {
     },
   ];
 
-  const claudeCodeCommand = `claude mcp add --transport http memshell-party ${mcpUrl}`;
+  const claudeCodeCommand = `claude mcp add --transport http memshell-party ${mcpUrl}${
+    authorization ? ` --header 'Authorization: ${authorization}'` : ""
+  }`;
+  const clientHeaders = authorization ? { Authorization: authorization } : undefined;
   const cursorConfig = JSON.stringify(
-    { mcpServers: { "memshell-party": { type: "streamableHttp", url: mcpUrl } } },
+    {
+      mcpServers: {
+        "memshell-party": {
+          type: "streamableHttp",
+          url: mcpUrl,
+          ...(clientHeaders ? { headers: clientHeaders } : {}),
+        },
+      },
+    },
     null,
     2,
   );
   const vscodeConfig = JSON.stringify(
-    { servers: { "memshell-party": { type: "http", url: mcpUrl } } },
+    {
+      servers: {
+        "memshell-party": {
+          type: "http",
+          url: mcpUrl,
+          ...(clientHeaders ? { headers: clientHeaders } : {}),
+        },
+      },
+    },
     null,
     2,
   );
   const desktopConfig = JSON.stringify(
-    { mcpServers: { "memshell-party": { command: "npx", args: ["mcp-remote", mcpUrl] } } },
+    {
+      mcpServers: {
+        "memshell-party": {
+          command: "npx",
+          args: [
+            "mcp-remote",
+            mcpUrl,
+            ...(authorization ? ["--header", `Authorization: ${authorization}`] : []),
+          ],
+        },
+      },
+    },
     null,
     2,
   );
@@ -173,6 +226,14 @@ export default function McpPage() {
         {/* Client configs */}
         <motion.section variants={itemVariants} className="space-y-4">
           <h2 className="text-lg font-semibold">{t("clients.title")}</h2>
+          {authStatus ? (
+            <p
+              className="text-sm text-muted-foreground"
+              role={authStatus === "clients.authError" ? "alert" : "status"}
+            >
+              {t(authStatus)}
+            </p>
+          ) : null}
           <Tabs defaultValue="claude-code">
             <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="claude-code">Claude Code</TabsTrigger>
