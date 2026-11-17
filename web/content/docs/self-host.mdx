@@ -63,3 +63,113 @@ java -jar --add-opens=java.base/java.util=ALL-UNNAMED \
         --add-opens=java.xml/com.sun.org.apache.xalan.internal.xsltc.runtime=ALL-UNNAMED \
         memshell-party-boot-x.x.x.jar --server.port=9999
 ```
+
+## 认证
+
+认证覆盖 UI、REST、MCP 和文档数据请求，静态资源 `/assets/**` 与 favicon 允许匿名访问。默认值为 `OFF`，上述 Docker 与 Jar 默认启动命令不变，也不需要提供任何凭据。如需显式关闭，可设置 `--memshell-party.auth.mode=OFF`。`ADMIN` 认证失败返回 401，`PLATFORM` 认证失败返回 403。
+
+Docker 环境变量使用 Spring Boot relaxed binding：
+
+| 配置 | Docker 环境变量 |
+| --- | --- |
+| `memshell-party.auth.mode` | `memshell-party_auth_mode` |
+| `memshell-party.auth.platform.secret` | `memshell-party_auth_platform_secret` |
+| `memshell-party.auth.platform.name` | `memshell-party_auth_platform_name` |
+
+以下 Jar 示例省略了上述 `--add-opens` 参数，实际启动时应保留这些参数。
+
+### ADMIN
+
+`ADMIN` 只有一个用户，固定用户名为 `admin`。每次启动都会生成新的随机密码，密码只出现在启动日志中，不支持固定密码配置。
+
+Docker：
+
+```bash
+docker run --pull=always --rm -d -p 8080:8080 \
+  --env 'memshell-party_auth_mode=ADMIN' \
+  --name memshell-party reajason/memshell-party:latest
+
+docker logs memshell-party
+```
+
+Jar：
+
+```bash
+java -jar memshell-party-boot-x.x.x.jar --memshell-party.auth.mode=ADMIN
+```
+
+在日志中找到 `Generated admin password for user 'admin'` 后面的密码。浏览器会显示原生 Basic 认证提示；命令行使用：
+
+```bash
+curl --user 'admin:<启动日志中的密码>' http://127.0.0.1:8080/api/config
+```
+
+### PLATFORM
+
+`PLATFORM` 使用同一个 `name` 作为 HTTP 请求头名称和查询参数名称，无需配置凭据来源。`name` 必须同时符合 HTTP field-name token 和查询参数名称要求，不能包含空白、控制字符或 `&`、`=`、`#` 等分隔符。
+
+服务先检查该请求头。请求头存在时，只验证请求头。空值、重复值或错误值都返回 403，正确的查询参数也不能补救。只有请求头不存在时，服务才验证原始 URL 中的同名查询参数。表单请求体中的同名参数不能用于认证。
+
+不设置 `secret` 时，服务使用 32 个随机字节生成不带填充的 URL-safe Base64 凭据，并在启动日志中记录一次。该凭据仅在本次进程生命周期内有效，重启后会改变。显式配置空白 `secret` 会阻止启动。
+
+Docker 自动生成凭据：
+
+```bash
+docker run --pull=always --rm -d -p 8080:8080 \
+  --env 'memshell-party_auth_mode=PLATFORM' \
+  --env 'memshell-party_auth_platform_name=X-API-Key' \
+  --name memshell-party reajason/memshell-party:latest
+
+docker logs memshell-party
+```
+
+Jar 自动生成凭据：
+
+```bash
+java -jar memshell-party-boot-x.x.x.jar \
+  --memshell-party.auth.mode=PLATFORM \
+  --memshell-party.auth.platform.name=X-API-Key
+```
+
+在日志中找到 `Generated platform credential for 'X-API-Key'` 后面的凭据。如果凭据需要在重启后保持不变，在部署时生成一次，并将结果保存到密钥管理系统：
+
+```bash
+openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n'
+```
+
+后续启动始终注入同一个值。Docker 使用 `memshell-party_auth_platform_secret` 环境变量，Jar 使用以下参数：
+
+```bash
+java -jar memshell-party-boot-x.x.x.jar \
+  --memshell-party.auth.mode=PLATFORM \
+  --memshell-party.auth.platform.secret='<已保存的平台密钥>' \
+  --memshell-party.auth.platform.name=X-API-Key
+```
+
+服务不会记录显式配置的非空密钥。
+
+优先携带请求头：
+
+```bash
+curl -H 'X-API-Key: <平台密钥>' http://127.0.0.1:8080/api/config
+```
+
+通过 nginx 暴露 UI 时，可由反向代理统一注入请求头，避免浏览器保存平台密钥：
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-API-Key "<平台密钥>";
+}
+```
+
+请求头不存在时，也可以携带同名查询参数：
+
+```bash
+curl 'http://127.0.0.1:8080/api/config?X-API-Key=<平台密钥>'
+```
+
+查询参数密钥可能进入 URL、浏览器历史、代理与访问日志、命令历史和监控数据。非回环地址部署应使用 HTTPS，并限制直接访问应用端口。Basic 凭据的 Base64 编码和查询参数都不提供传输加密，反向代理应负责 TLS 终止。

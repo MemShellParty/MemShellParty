@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { env } from "@/config";
 import { siteConfig } from "@/lib/config";
 import { fetchJson } from "@/utils/fetch-json";
+import { preserveCurrentQuery } from "@/utils/preserve-query";
 import { buildObfuscation } from "@/utils/transformer";
 
 import { baseOptions } from "../lib/layout.shared";
@@ -106,7 +107,7 @@ export default function BytecodeToolsPage() {
     const timer = setTimeout(() => {
       void (async () => {
         try {
-          const response = await fetch(decodeEndpoint, {
+          const response = await fetch(preserveCurrentQuery(decodeEndpoint), {
             method: "POST",
             headers: { "Content-Type": "text/plain" },
             body: source,
@@ -152,7 +153,7 @@ export default function BytecodeToolsPage() {
     transformAbortRef.current = controller;
 
     try {
-      const response = await fetch(transformEndpoint, {
+      const response = await fetch(preserveCurrentQuery(transformEndpoint), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

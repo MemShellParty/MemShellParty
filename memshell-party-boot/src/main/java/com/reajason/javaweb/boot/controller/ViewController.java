@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -31,8 +32,10 @@ public class ViewController {
     private static final Pattern SAFE_PATH = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._/-]*");
 
     @GetMapping("/")
-    public String index(){
-        return "redirect:/ui";
+    public RedirectView index() {
+        RedirectView redirect = new RedirectView("/ui");
+        redirect.setPropagateQueryParams(true);
+        return redirect;
     }
 
     @GetMapping({"/api/search", "/api/search.data"})

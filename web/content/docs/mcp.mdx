@@ -73,6 +73,55 @@ boot 服务内置 MCP Server，端点为 `/mcp`，协议为 Streamable HTTP。
 
 保存配置后重启客户端生效。URL 替换为实际部署地址。
 
+## 认证
+
+默认 `OFF` 模式不需要凭据。启用 `ADMIN` 或 `PLATFORM` 后，每次 MCP HTTP 请求都必须携带凭据，包括初始化、列出工具、调用工具和后续会话请求。
+
+`ADMIN` 使用启动日志中生成的随机密码，为每次请求添加 HTTP Basic 请求头：
+
+```bash
+claude mcp add --transport http memshell-party http://127.0.0.1:8080/mcp \
+  --header "Authorization: Basic <base64(admin:启动日志中的密码)>"
+```
+
+`PLATFORM` 的 Claude Code 请求头配置示例：
+
+```bash
+claude mcp add --transport http memshell-party http://127.0.0.1:8080/mcp \
+  --header "X-API-Key: <平台密钥>"
+```
+
+请求头名称必须与 `memshell-party.auth.platform.name` 一致。未配置 `memshell-party.auth.platform.secret` 时，启动日志会记录一次自动生成的凭据，重启后凭据会改变。需要固定凭据时，在部署时生成一次并通过该配置注入。
+
+服务只在同名请求头不存在时验证查询参数，例如 `http://127.0.0.1:8080/mcp?X-API-Key=<平台密钥>`。请求头存在但为空、重复或错误时，请求返回 403，正确的查询参数也不能补救。正确的请求头优先于错误的查询参数。
+
+MCP 工具返回的 `RestCallPlan` 不含认证凭据。生成工具返回计划后，后续 REST POST 也必须独立认证，不能复用 MCP 的认证状态。
+
+ADMIN 的后续 REST 请求：
+
+```bash
+curl --user 'admin:<启动日志中的密码>' \
+  --data-binary @request.json -H 'Content-Type: application/json' \
+  -o memshell.json <endpoint>
+```
+
+PLATFORM 的后续 REST 请求头：
+
+```bash
+curl -H 'X-API-Key: <平台密钥>' \
+  --data-binary @request.json -H 'Content-Type: application/json' \
+  -o memshell.json <endpoint>
+```
+
+请求头不存在时，PLATFORM 的后续 REST 请求可以使用查询参数：
+
+```bash
+curl --data-binary @request.json -H 'Content-Type: application/json' \
+  -o memshell.json '<endpoint>?X-API-Key=<平台密钥>'
+```
+
+查询参数密钥可能进入 URL、访问日志和命令历史，优先使用请求头，并在非回环地址部署中使用 HTTPS。
+
 ## 调用流程
 
 1. 调用 `memshell_capabilities`，获取合法的 server、shellTool、shellType、packer 等取值。

@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { env } from "@/config";
+import { preserveCurrentQuery } from "@/utils/preserve-query";
 
 export default function CustomTabContent({
   form,
@@ -38,7 +39,7 @@ export default function CustomTabContent({
     const timer = setTimeout(() => {
       const parseClassName = async () => {
         try {
-          const response = await fetch(classNameEndpoint, {
+          const response = await fetch(preserveCurrentQuery(classNameEndpoint), {
             method: "POST",
             headers: {
               "Content-Type": "text/plain",

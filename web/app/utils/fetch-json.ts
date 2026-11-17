@@ -1,3 +1,5 @@
+import { preserveCurrentQuery } from "@/utils/preserve-query";
+
 /**
  * 配置类接口的统一请求封装：非 2xx 直接抛错，并给单次请求加超时。
  *
@@ -28,7 +30,10 @@ export async function fetchJson<T>(
   }
 
   try {
-    const response = await fetch(url, { ...init, signal: controller.signal });
+    const response = await fetch(preserveCurrentQuery(url), {
+      ...init,
+      signal: controller.signal,
+    });
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`.trim());
     }

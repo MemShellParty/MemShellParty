@@ -24,6 +24,7 @@ import {
   useYupValidationProbeResolver,
 } from "@/types/schema";
 import { fetchJson } from "@/utils/fetch-json";
+import { preserveCurrentQuery } from "@/utils/preserve-query";
 import { transformToProbePostData } from "@/utils/transformer";
 
 export default function ProbeShellGenerator() {
@@ -119,7 +120,7 @@ export default function ProbeShellGenerator() {
 
     try {
       const postData = transformToProbePostData(data);
-      const response = await fetch(`${env.API_URL}/api/probe/generate`, {
+      const response = await fetch(preserveCurrentQuery(`${env.API_URL}/api/probe/generate`), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

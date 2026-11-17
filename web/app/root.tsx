@@ -1,27 +1,48 @@
 import type { Route } from "./+types/root";
 
 import { RootProvider } from "fumadocs-ui/provider/react-router";
-import { lazy } from "react";
+import { type ComponentProps, lazy } from "react";
 
 import "./app.css";
 import { I18nextProvider } from "react-i18next";
 import {
   isRouteErrorResponse,
+  Link as RouterLink,
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { Toaster } from "@/components/ui/sonner";
 import { env } from "@/config";
+import { preserveQuery } from "@/utils/preserve-query";
 
 import i18n from "./i18n/i18n";
 import { QueryProvider } from "./providers/query-client-provider";
 
 const SearchDialog = lazy(() => import("@/components/search"));
+
+function QueryPreservingLink({
+  href,
+  prefetch,
+  ...props
+}: ComponentProps<"a"> & { prefetch?: boolean }) {
+  const location = useLocation();
+  if (!href) return <a {...props} />;
+  return (
+    <RouterLink
+      to={preserveQuery(href, location)}
+      prefetch={prefetch ? "intent" : "none"}
+      {...props}
+    />
+  );
+}
+
+const providerComponents = { Link: QueryPreservingLink };
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -42,11 +63,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="referrer" content="same-origin" />
         <Meta />
         <Links />
       </head>
       <body className="flex min-h-screen flex-col">
-        <RootProvider search={{ SearchDialog, preload: false }}>
+        <RootProvider components={providerComponents} search={{ SearchDialog, preload: false }}>
           <Toaster />
           <QueryProvider>
             <I18nextProvider i18n={i18n}>{children}</I18nextProvider>

@@ -15,7 +15,7 @@ import {
   User,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 
 import { Icons } from "@/components/icons";
 import { LineShadowText } from "@/components/magicui/line-shadow-text";
@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { env } from "@/config";
 import { siteConfig } from "@/lib/config";
+import { preserveCurrentQuery, preserveQuery } from "@/utils/preserve-query";
 
 import { baseOptions } from "../lib/layout.shared";
 
@@ -51,6 +52,7 @@ type InstalledPlugin = {
 };
 
 export default function AboutPage() {
+  const location = useLocation();
   const theme = useTheme();
   const shadowColor = theme.theme === "dark" ? "#ffffff" : "#000000";
   const {
@@ -60,7 +62,7 @@ export default function AboutPage() {
   } = useQuery<VersionInfo>({
     queryKey: ["version"],
     queryFn: async () => {
-      const response = await fetch(`${env.API_URL}/api/version`);
+      const response = await fetch(preserveCurrentQuery(`${env.API_URL}/api/version`));
       if (response.ok) {
         return await response.json();
       }
@@ -70,7 +72,7 @@ export default function AboutPage() {
   const { data: installedPlugins, isPending: pluginsPending } = useQuery<InstalledPlugin[]>({
     queryKey: ["plugins"],
     queryFn: async () => {
-      const response = await fetch(`${env.API_URL}/api/plugins`);
+      const response = await fetch(preserveCurrentQuery(`${env.API_URL}/api/plugins`));
       if (response.ok) {
         return await response.json();
       }
@@ -323,7 +325,7 @@ export default function AboutPage() {
                   </p>
                   <Link
                     className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                    to="/docs"
+                    to={preserveQuery("/docs", location)}
                   >
                     Read Docs <ExternalLink className="h-3 w-3" />
                   </Link>
