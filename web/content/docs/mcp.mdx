@@ -91,7 +91,7 @@ claude mcp add --transport http memshell-party http://127.0.0.1:8080/mcp \
   --header "x_token: <平台令牌>"
 ```
 
-请求头名称必须与 `memshell-party.auth.platform.mcp.auth-param` 一致。服务把令牌转发到 `memshell-party.auth.platform.mcp.sign-url`，只有平台响应为 2xx 且响应体包含 `sign-success-res` 时才继续。完整配置见[自托管部署](/docs/self-host#platform)。
+请求头名称必须与 `memshell-party.auth.platform.mcp.auth-param` 一致。服务把令牌转发到 `memshell-party.auth.platform.mcp.sign-url`，只有平台响应为 2xx 且响应体包含 `sign-success-res` 时才继续。该地址为 HTTPS 时不校验证书，自签名证书也可以使用。完整配置见[自托管部署](/docs/self-host#platform)。
 
 请求头不存在时，也可以携带同名查询参数，例如 `http://127.0.0.1:8080/mcp?x_token=<平台令牌>`。请求头存在但为空、重复或错误时返回 403，正确的查询参数不能补救。
 
