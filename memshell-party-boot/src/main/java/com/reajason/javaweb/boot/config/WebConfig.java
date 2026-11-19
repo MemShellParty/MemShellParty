@@ -19,9 +19,10 @@ import java.util.List;
 public class WebConfig {
 
     @Bean
-    public FilterRegistrationBean<BootAuthFilter> bootAuthFilter(AuthProperties properties, Environment environment) {
+    public FilterRegistrationBean<BootAuthFilter> bootAuthFilter(
+            AuthProperties properties, Environment environment, RestTemplate restTemplate) {
         FilterRegistrationBean<BootAuthFilter> registration = new FilterRegistrationBean<>(
-                new BootAuthFilter(properties, environment));
+                new BootAuthFilter(properties, environment, restTemplate));
         registration.setName("bootAuthFilter");
         registration.setUrlPatterns(List.of("/*"));
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);

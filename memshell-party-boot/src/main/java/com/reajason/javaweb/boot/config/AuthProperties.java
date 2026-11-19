@@ -32,23 +32,72 @@ public class AuthProperties {
 
     public static class Platform {
 
-        private String secret;
-        private String name;
+        private Scope rest;
+        private Scope mcp;
 
-        public String getSecret() {
-            return secret;
+        public Scope getRest() {
+            return rest;
         }
 
-        public void setSecret(String secret) {
-            this.secret = secret;
+        public void setRest(Scope rest) {
+            this.rest = rest;
         }
 
-        public String getName() {
-            return name;
+        public Scope getMcp() {
+            return mcp;
         }
 
-        public void setName(String name) {
-            this.name = name;
+        public void setMcp(Scope mcp) {
+            this.mcp = mcp;
+        }
+    }
+
+    public static class Scope {
+
+        private String authParam;
+        private String signUrl;
+        private String signParam;
+        private String signHeader;
+        private String signSuccessRes;
+
+        public String getAuthParam() {
+            return authParam;
+        }
+
+        public void setAuthParam(String authParam) {
+            this.authParam = authParam;
+        }
+
+        public String getSignUrl() {
+            return signUrl;
+        }
+
+        public void setSignUrl(String signUrl) {
+            this.signUrl = signUrl;
+        }
+
+        public String getSignParam() {
+            return signParam;
+        }
+
+        public void setSignParam(String signParam) {
+            this.signParam = signParam;
+        }
+
+        public String getSignHeader() {
+            return signHeader;
+        }
+
+        public void setSignHeader(String signHeader) {
+            this.signHeader = signHeader;
+        }
+
+        public String getSignSuccessRes() {
+            return signSuccessRes;
+        }
+
+        public void setSignSuccessRes(String signSuccessRes) {
+            this.signSuccessRes = signSuccessRes;
         }
     }
 }
