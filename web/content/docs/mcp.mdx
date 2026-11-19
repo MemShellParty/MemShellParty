@@ -84,18 +84,18 @@ claude mcp add --transport http memshell-party http://127.0.0.1:8080/mcp \
   --header "Authorization: Basic <base64(admin:启动日志中的密码)>"
 ```
 
-`PLATFORM` 的 Claude Code 请求头配置示例：
+`PLATFORM` 的 Claude Code 请求头配置示例。示例假设 `platform.mcp.auth-param=x_token`：
 
 ```bash
 claude mcp add --transport http memshell-party http://127.0.0.1:8080/mcp \
-  --header "X-API-Key: <平台密钥>"
+  --header "x_token: <平台令牌>"
 ```
 
-请求头名称必须与 `memshell-party.auth.platform.name` 一致。未配置 `memshell-party.auth.platform.secret` 时，启动日志会记录一次自动生成的凭据，重启后凭据会改变。需要固定凭据时，在部署时生成一次并通过该配置注入。
+请求头名称必须与 `memshell-party.auth.platform.mcp.auth-param` 一致。服务把令牌转发到 `memshell-party.auth.platform.mcp.sign-url`，只有平台响应为 2xx 且响应体包含 `sign-success-res` 时才继续。完整配置见[自托管部署](/docs/self-host#platform)。
 
-服务只在同名请求头不存在时验证查询参数，例如 `http://127.0.0.1:8080/mcp?X-API-Key=<平台密钥>`。请求头存在但为空、重复或错误时，请求返回 403，正确的查询参数也不能补救。正确的请求头优先于错误的查询参数。
+请求头不存在时，也可以携带同名查询参数，例如 `http://127.0.0.1:8080/mcp?x_token=<平台令牌>`。请求头存在但为空、重复或错误时返回 403，正确的查询参数不能补救。
 
-MCP 工具返回的 `RestCallPlan` 不含认证凭据。生成工具返回计划后，后续 REST POST 也必须独立认证，不能复用 MCP 的认证状态。
+MCP 与 REST 分开校验。MCP 使用 `platform.mcp.*`，后续 REST POST 使用 `platform.rest.*`，两者可以指向同一个平台接口。MCP 工具返回的 `RestCallPlan` 不含认证凭据，后续 REST 请求必须独立携带令牌。
 
 ADMIN 的后续 REST 请求：
 
@@ -108,7 +108,7 @@ curl --user 'admin:<启动日志中的密码>' \
 PLATFORM 的后续 REST 请求头：
 
 ```bash
-curl -H 'X-API-Key: <平台密钥>' \
+curl -H 'x_token: <平台令牌>' \
   --data-binary @request.json -H 'Content-Type: application/json' \
   -o memshell.json <endpoint>
 ```
@@ -117,10 +117,10 @@ curl -H 'X-API-Key: <平台密钥>' \
 
 ```bash
 curl --data-binary @request.json -H 'Content-Type: application/json' \
-  -o memshell.json '<endpoint>?X-API-Key=<平台密钥>'
+  -o memshell.json '<endpoint>?x_token=<平台令牌>'
 ```
 
-查询参数密钥可能进入 URL、访问日志和命令历史，优先使用请求头，并在非回环地址部署中使用 HTTPS。
+查询参数令牌可能进入 URL、访问日志和命令历史，优先使用请求头，并在非回环地址部署中使用 HTTPS。
 
 ## 调用流程
 

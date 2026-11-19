@@ -5,13 +5,13 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -20,8 +20,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,16 +28,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {
-                "memshell-party.auth.mode=PLATFORM",
-                "memshell-party.auth.platform.name=access_token"
-        })
-@ExtendWith(OutputCaptureExtension.class)
-class PlatformQueryAuthIntegrationTest {
+        properties = "memshell-party.auth.mode=PLATFORM")
+class PlatformMcpAuthIntegrationTest {
 
-    private static final Pattern CREDENTIAL_PATTERN = Pattern.compile(
-            "Generated platform credential for 'access_token': ([A-Za-z0-9_-]{43})");
-    private static final String CREDENTIAL_NAME = "access_token";
+    private static final String VALID_TOKEN = PlatformSignServer.VALID_TOKEN;
+    private static final PlatformSignServer SIGN_SERVER = new PlatformSignServer();
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -47,62 +40,83 @@ class PlatformQueryAuthIntegrationTest {
     @LocalServerPort
     private int port;
 
+    @DynamicPropertySource
+    static void authProperties(DynamicPropertyRegistry registry) {
+        registry.add("memshell-party.auth.platform.rest.auth-param", () -> "x_token");
+        registry.add("memshell-party.auth.platform.rest.sign-url", () -> SIGN_SERVER.url("/rest-check"));
+        registry.add("memshell-party.auth.platform.rest.sign-param", () -> "x_token");
+        registry.add("memshell-party.auth.platform.rest.sign-success-res", () -> "\"code\":1");
+
+        registry.add("memshell-party.auth.platform.mcp.auth-param", () -> "mcp_token");
+        registry.add("memshell-party.auth.platform.mcp.sign-url", () -> SIGN_SERVER.url("/mcp-check"));
+        registry.add("memshell-party.auth.platform.mcp.sign-param", () -> "mcp_token");
+        registry.add("memshell-party.auth.platform.mcp.sign-success-res", () -> "\"code\":1");
+    }
+
+    @AfterAll
+    static void stopSignServer() {
+        SIGN_SERVER.close();
+    }
+
     @Test
-    void generatedCredentialSupportsHeaderAndQueryWithLegacyLocationIgnored(CapturedOutput output) throws Exception {
-        Matcher matcher = CREDENTIAL_PATTERN.matcher(output.getAll());
-        assertTrue(matcher.find(), "startup output did not contain the generated platform credential");
-        String secret = matcher.group(1);
-        assertFalse(matcher.find(), "the generated platform credential must be logged only once");
+    void restAndMcpVerifyAgainstTheirOwnScopes() throws Exception {
+        int restBefore = SIGN_SERVER.calls("/rest-check");
+        int mcpBefore = SIGN_SERVER.calls("/mcp-check");
 
-        assertPlatformFailure(request("/api/config").GET());
-        assertPlatformFailure(request("/api/config?access_token=").GET());
-        assertPlatformFailure(request("/api/config?access_token=wrong-secret").GET());
-        assertPlatformFailure(request("/api/config?access_token=" + secret + "&access_token=" + secret).GET());
-        assertPlatformFailure(request("/api/config?access_token=%FF").GET());
-        assertEquals(200, send(request("/favicon.ico").GET()).statusCode());
-        assertNotEquals(403, send(request("/assets/not-found.js").GET()).statusCode());
-        HttpResponse<String> headerConfig = send(request("/api/config").header(CREDENTIAL_NAME, secret).GET());
-        assertEquals(200, headerConfig.statusCode());
-        assertPlatformFailure(request("/api/config")
-                .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(CREDENTIAL_NAME + "=" + secret)));
+        assertEquals(200, send(request("/api/config?x_token=" + VALID_TOKEN)).statusCode());
+        assertEquals(restBefore + 1, SIGN_SERVER.calls("/rest-check"));
+        assertEquals(mcpBefore, SIGN_SERVER.calls("/mcp-check"));
 
-        HttpResponse<String> config = send(request("/api/config?access_token=" + secret).GET());
-        assertEquals(200, config.statusCode());
-        HttpResponse<String> root = send(request("/?access_token=" + secret).GET());
-        assertEquals(302, root.statusCode());
-        assertEquals("http://localhost:" + port + "/ui?access_token=" + secret,
-                root.headers().firstValue(HttpHeaders.LOCATION).orElse(null));
+        assertPlatformFailure(rawJsonRpc("/mcp?x_token=" + VALID_TOKEN));
+        assertPlatformFailure(request("/api/config?mcp_token=" + VALID_TOKEN));
+        assertEquals(restBefore + 1, SIGN_SERVER.calls("/rest-check"));
+        assertEquals(mcpBefore, SIGN_SERVER.calls("/mcp-check"));
+    }
+
+    @Test
+    void validMcpCredentialInitializesAndPlansAnUncredentialedRestCall() throws Exception {
+        int restBefore = SIGN_SERVER.calls("/rest-check");
+        int mcpBefore = SIGN_SERVER.calls("/mcp-check");
 
         HttpClientStreamableHttpTransport transport = HttpClientStreamableHttpTransport
                 .builder("http://localhost:" + port)
-                .endpoint("/mcp?" + CREDENTIAL_NAME + "=" + secret)
+                .endpoint("/mcp?mcp_token=" + VALID_TOKEN)
                 .build();
         try (McpSyncClient client = McpClient.sync(transport).build()) {
             client.initialize();
+            assertTrue(SIGN_SERVER.calls("/mcp-check") > mcpBefore);
+            assertEquals(restBefore, SIGN_SERVER.calls("/rest-check"));
+
             McpSchema.ListToolsResult tools = client.listTools();
             assertTrue(tools.tools().stream().anyMatch(tool -> "generate_probe_shell".equals(tool.name())));
 
             JsonNode plan = callProbePlan(client);
-            assertFalse(plan.toString().contains(secret));
+            assertFalse(plan.toString().contains(VALID_TOKEN));
             String endpoint = plan.path("endpoint").asText();
             assertTrue(endpoint.endsWith("/api/probe/generate"), endpoint);
             assertFalse(endpoint.contains("?"), endpoint);
 
+            String body = plan.path("body").toString();
             assertPlatformFailure(HttpRequest.newBuilder(URI.create(endpoint))
                     .header(HttpHeaders.CONTENT_TYPE, "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(plan.path("body").toString())));
+                    .POST(HttpRequest.BodyPublishers.ofString(body)));
 
             HttpResponse<String> generated = send(HttpRequest.newBuilder(
-                            URI.create(endpoint + "?" + CREDENTIAL_NAME + "=" + secret))
+                            URI.create(endpoint + "?x_token=" + VALID_TOKEN))
                     .header(HttpHeaders.CONTENT_TYPE, "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(plan.path("body").toString())));
+                    .POST(HttpRequest.BodyPublishers.ofString(body)));
             assertEquals(200, generated.statusCode());
             assertFalse(generated.body().isBlank());
+            assertEquals(restBefore + 1, SIGN_SERVER.calls("/rest-check"));
         }
     }
 
-    private JsonNode callProbePlan(McpSyncClient client) throws Exception {
+    @Test
+    void invalidMcpCredentialIsForbiddenBeforeJsonRpc() throws Exception {
+        assertPlatformFailure(rawJsonRpc("/mcp?mcp_token=unknown-token"));
+    }
+
+    private JsonNode callProbePlan(McpSyncClient client) {
         McpSchema.CallToolResult result = client.callTool(new McpSchema.CallToolRequest(
                 "generate_probe_shell",
                 Map.of("request", Map.of(
@@ -121,6 +135,16 @@ class PlatformQueryAuthIntegrationTest {
 
     private HttpRequest.Builder request(String path) {
         return HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
+    }
+
+    private HttpRequest.Builder rawJsonRpc(String path) {
+        return request(path)
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .header(HttpHeaders.ACCEPT, "application/json, text/event-stream")
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\","
+                                + "\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},"
+                                + "\"clientInfo\":{\"name\":\"raw\",\"version\":\"1\"}}}"));
     }
 
     private HttpResponse<String> send(HttpRequest.Builder request) throws Exception {
