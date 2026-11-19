@@ -1,6 +1,6 @@
 ---
 title: MCP 接入
-description: 通过 Streamable HTTP 将 MCP 客户端连接到 boot 服务，由 Agent 按返回的端点与请求体自行发起 HTTP 请求，生成内存马与探测马
+description: 通过 Streamable HTTP 将 MCP 客户端连接到 boot 服务，由 Agent 在服务端直接生成内存马与探测马
 icon: Plug
 ---
 
@@ -14,10 +14,10 @@ boot 服务内置 MCP Server，端点为 `/mcp`，协议为 Streamable HTTP。
 | 工具 | 说明 |
 | --- | --- |
 | `memshell_capabilities` | 列出全部 server、shellTool、shellType、packer、探测方式、混淆参数与混淆范围 |
-| `generate_memshell` | 返回内存马的 POST 请求计划（`endpoint` + `body`），不生成也不回传 payload；`body` 与 `POST /api/memshell/generate` 一致，支持 Godzilla、Behinder、AntSword、Suo5、Command 等 |
-| `generate_probe_shell` | 返回探测马的 POST 请求计划（`endpoint` + `body`），不生成也不回传 payload；`body` 与 `POST /api/probe/generate` 一致，支持 DNSLog、ResponseBody、ResponseHeader、Sleep |
+| `generate_memshell` | 在服务端直接生成内存马，返回 `memShellResult` 与 `packResult`；请求参数与 `POST /api/memshell/generate` 一致，支持 Godzilla、Behinder、AntSword、Suo5、Command 等 |
+| `generate_probe_shell` | 在服务端直接生成探测马，返回 `probeShellResult` 与 `packResult`；请求参数与 `POST /api/probe/generate` 一致，支持 DNSLog、ResponseBody、ResponseHeader、Sleep |
 
-> 建议先调用 `memshell_capabilities` 获取合法参数，再调用生成工具拿到 `endpoint` 与 `body`。`body` 保存为文件后用 curl 或其他 HTTP 客户端 POST 到 `endpoint`，响应也写入文件，payload 不经过 MCP 上下文。没有 HTTP 工具的纯聊天客户端无法把 payload 留在上下文之外。
+> 建议先调用 `memshell_capabilities` 获取合法参数，再调用生成工具。生成在 MCP 服务内完成，payload 直接出现在工具结果中，不需要再发起 REST 请求，因此 MCP 与 REST 可以使用各自独立的凭据。
 
 ## 客户端配置
 
@@ -95,49 +95,18 @@ claude mcp add --transport http memshell-party http://127.0.0.1:8080/mcp \
 
 请求头不存在时，也可以携带同名查询参数，例如 `http://127.0.0.1:8080/mcp?x_token=<平台令牌>`。请求头存在但为空、重复或错误时返回 403，正确的查询参数不能补救。
 
-MCP 与 REST 分开校验。MCP 使用 `platform.mcp.*`，后续 REST POST 使用 `platform.rest.*`，两者可以指向同一个平台接口。MCP 工具返回的 `RestCallPlan` 不含认证凭据，后续 REST 请求必须独立携带令牌。
-
-ADMIN 的后续 REST 请求：
-
-```bash
-curl --user 'admin:<启动日志中的密码>' \
-  --data-binary @request.json -H 'Content-Type: application/json' \
-  -o memshell.json <endpoint>
-```
-
-PLATFORM 的后续 REST 请求头：
-
-```bash
-curl -H 'x_token: <平台令牌>' \
-  --data-binary @request.json -H 'Content-Type: application/json' \
-  -o memshell.json <endpoint>
-```
-
-请求头不存在时，PLATFORM 的后续 REST 请求可以使用查询参数：
-
-```bash
-curl --data-binary @request.json -H 'Content-Type: application/json' \
-  -o memshell.json '<endpoint>?x_token=<平台令牌>'
-```
+MCP 与 REST 分开校验。MCP 使用 `platform.mcp.*`，直接调用 REST API 时使用 `platform.rest.*`，两者可以指向同一个平台接口。MCP 生成工具不依赖 REST 凭据。
 
 查询参数令牌可能进入 URL、访问日志和命令历史，优先使用请求头，并在非回环地址部署中使用 HTTPS。
 
 ## 调用流程
 
 1. 调用 `memshell_capabilities`，获取合法的 server、shellTool、shellType、packer 等取值。
-2. 调用 `generate_memshell` 或 `generate_probe_shell`，拿到 `endpoint` 与 `body`。
-3. 把 `body` 写入 `request.json`，再 POST 到 `endpoint` 并把响应写入文件：
-
-   ```bash
-   curl --data-binary @request.json -H 'Content-Type: application/json' -o memshell.json <endpoint>
-   ```
-
-4. 用 `jq` 只读取需要的字段，例如 `jq -r '.memShellResult.shellClassName, .packResult' memshell.json`。
-
-endpoint 使用 MCP 客户端连接时的地址，所以 MCP 与 REST 必须经过同一个入口。反向代理要保留 `Host`，或转发 `X-Forwarded-Host`。入口是 HTTPS 时，还要转发 `X-Forwarded-Proto`。入口带子路径时，还要转发 `X-Forwarded-Prefix`。服务端设置 `server.forward-headers-strategy=framework` 后才会采用这些头。
+2. 调用 `generate_memshell` 或 `generate_probe_shell`，生成在服务端完成，直接返回 `packResult` 与结果元数据。
+3. 按需读取结果字段，例如 `memShellResult.shellClassName`、`memShellResult.injectorConfig` 与 `packResult`。
 
 示例指令：
 
 ```
-先调用 memshell_capabilities 获取合法参数，再调用 generate_memshell 拿到 endpoint 与 body，然后把 body 保存为 request.json 并 POST 到 endpoint，最后只读取响应文件中的类名与 payload。
+先调用 memshell_capabilities 获取合法参数，再调用 generate_memshell 直接生成 payload，并读取结果中的类名与 packResult。
 ```
