@@ -82,7 +82,8 @@ class PlatformMcpAuthIntegrationTest {
                 .builder("http://localhost:" + port)
                 .endpoint("/mcp?mcp_token=" + VALID_TOKEN)
                 .build();
-        try (McpSyncClient client = McpClient.sync(transport).build()) {
+        McpSyncClient client = McpClient.sync(transport).build();
+        try {
             client.initialize();
             assertTrue(SIGN_SERVER.calls("/mcp-check") > mcpBefore);
             assertEquals(restBefore, SIGN_SERVER.calls("/rest-check"));
@@ -97,6 +98,10 @@ class PlatformMcpAuthIntegrationTest {
             assertFalse(generated.path("probeShellResult").path("shellClassName").asText().isBlank(),
                     generated.toString());
             assertEquals(restBefore, SIGN_SERVER.calls("/rest-check"));
+        } finally {
+            // close() returns before the streamable session teardown finishes, and its late
+            // authenticated requests would show up in the next test's platform-call counters.
+            client.closeGracefully();
         }
     }
 
