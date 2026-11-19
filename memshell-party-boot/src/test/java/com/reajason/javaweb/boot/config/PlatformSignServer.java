@@ -22,16 +22,26 @@ final class PlatformSignServer implements AutoCloseable {
     static final String SUCCESS_BODY = "{\"code\":1,\"message\":\"成功\",\"data\":{}}";
 
     private final HttpServer server;
+    private final String scheme;
     private final Map<String, AtomicInteger> calls = new ConcurrentHashMap<>();
 
     PlatformSignServer() {
+        this(createHttpServer(), "http");
+    }
+
+    PlatformSignServer(HttpServer server, String scheme) {
+        this.server = server;
+        this.scheme = scheme;
+        server.createContext("/", this::handle);
+        server.start();
+    }
+
+    private static HttpServer createHttpServer() {
         try {
-            server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+            return HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
-        server.createContext("/", this::handle);
-        server.start();
     }
 
     private void handle(HttpExchange exchange) throws IOException {
@@ -96,7 +106,7 @@ final class PlatformSignServer implements AutoCloseable {
     }
 
     String url(String path) {
-        return "http://127.0.0.1:" + server.getAddress().getPort() + path;
+        return scheme + "://127.0.0.1:" + server.getAddress().getPort() + path;
     }
 
     @Override
