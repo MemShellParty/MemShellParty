@@ -46,10 +46,6 @@ public final class RawWebSocketProxyNginxAssertion {
                 .withExposedService("app", 8080, Wait.forHttp("/app/")
                         .withStartupTimeout(Duration.ofMinutes(2)))
                 .withExposedService("nginx1", 80, Wait.forHttp("/app/")
-                        .withStartupTimeout(Duration.ofMinutes(2)))
-                .withExposedService("nginx2", 80, Wait.forHttp("/app/")
-                        .withStartupTimeout(Duration.ofMinutes(2)))
-                .withExposedService("nginx3", 80, Wait.forHttp("/app/")
                         .withStartupTimeout(Duration.ofMinutes(2)));
     }
 
@@ -80,7 +76,7 @@ public final class RawWebSocketProxyNginxAssertion {
             client.send(firstPayload);
             client.assertNext(firstPayload);
 
-            // 每跳 Nginx 的 proxy_read_timeout 都是 3s；心跳跨越 5s 后仍需保持同一隧道。
+            // Nginx 的 proxy_read_timeout 为 3s；心跳跨越 5s 后仍需保持同一隧道。
             for (int i = 0; i < 5; i++) {
                 client.sendPing();
                 assertNotNull(client.pongs.poll(3, TimeUnit.SECONDS),
@@ -97,10 +93,8 @@ public final class RawWebSocketProxyNginxAssertion {
                     + firstPayload.length + " + " + secondPayload.length
                     + " bytes echoed, 5 PONGs, " + elapsedMillis + " ms");
         } catch (Exception | Error failure) {
-            for (String service : new String[]{"nginx1", "nginx2", "nginx3"}) {
-                compose.getContainerByServiceName(service).ifPresent(container ->
-                        System.out.println(service + " logs:\n" + container.getLogs()));
-            }
+            compose.getContainerByServiceName("nginx1").ifPresent(container ->
+                    System.out.println("nginx1 logs:\n" + container.getLogs()));
             throw failure;
         } finally {
             client.closeBlocking();

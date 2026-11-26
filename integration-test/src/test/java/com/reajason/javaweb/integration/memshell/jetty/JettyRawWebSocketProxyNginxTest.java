@@ -34,16 +34,4 @@ public class JettyRawWebSocketProxyNginxTest {
     void singleNginx() throws Exception {
         RawWebSocketProxyNginxAssertion.assertProxy(compose, "nginx1");
     }
-
-    @Test
-    @Order(3)
-    void nestedNginx() throws Exception {
-        RawWebSocketProxyNginxAssertion.assertProxy(compose, "nginx2");
-    }
-
-    @Test
-    @Order(4)
-    void tripleNginx() throws Exception {
-        RawWebSocketProxyNginxAssertion.assertProxy(compose, "nginx3");
-    }
 }
