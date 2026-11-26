@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 3. REST `GET /api/config/servers` 暴露每个 server 的最低目标 JDK
 4. `AbstractServer#getToolMappingOverrides()`：插件 server 可以给已注册的工具补充或覆盖 `shellType -> shell` 模板，同名类型以服务端为准，工具自己的映射只补缺失类型；注册顺序不影响结果，无需复制工具名、配置项与界面条目
 5. `PluginBootstrap.validate(Path)` 校验上述覆盖：shell 类型没有注入器、模板类名为空或模板不存在都会进报告
+6. 自定义 shelltool 远程选项改为服务端数据源，新增 REST 选项接口与 MCP `list_remote_options`；对象字段通过 `keyPath` 声明稳定标识，生成时可按标识重新获取并解析完整对象，`PLATFORM` 按当前请求通道转发已验证凭据
 
 ### Fixed
 
@@ -32,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-1. 自定义 shelltool 支持远程下拉选项：`@ConfigField` 字段可再标注 `@RemoteOptions`，界面按远程接口返回的 JSON 提取选项，String 字段绑定选中 ID，`Map<String, Object>` 字段绑定完整对象；生成期不发起远程请求
+1. 自定义 shelltool 支持远程下拉选项：`@ConfigField` 字段可再标注 `@RemoteOptions`，界面按远程接口返回的 JSON 提取选项，String 字段绑定选中 ID，`Map<String, Object>` 字段绑定完整对象
 2. 新增 `ShellToolConfig#validate()` 校验钩子：生成入口在参数绑定完成后、创建生成器前调用，插件可抛出 `InvalidInputException` 报告非法输入
 3. 外置插件新增只读元信息列表：启动时解析 `META-INF/memshell-party-plugin.properties`（缺失时回退 MANIFEST 与 jar 文件名），通过 `GET /api/plugins` 暴露，Web 与桌面端「关于」均可查看已加载及加载失败的插件；描述符损坏不影响插件加载
 

@@ -208,31 +208,29 @@ public class MyToolConfig extends ShellToolConfig {
 #### 远程下拉选项
 
 需要由外部平台提供个性化选项时，在 `String` 或 `Map<String, Object>` 字段上追加
-`@RemoteOptions`。完整对象模式的声明如下：
+`@RemoteOptions`，并在 boot 服务端 YAML 配置对应数据源。完整对象模式的声明如下：
 
 ```java
 @ConfigField(label = "Profile")
 @RemoteOptions(
-        urlQueryParam = "profileUrlParam",
         itemsPath = "data.items",
         labelPath = "name",
+        keyPath = "id",
         required = true)
 private Map<String, Object> profile;
 ```
 
-外部平台通过 `?profileUrlParam=<url-encoded-options-url>` 启动页面。Web 端读取该参数后，将其保存到
-当前浏览器标签页的 `sessionStorage`，再从地址栏移除；内存马、探测马等页面来回切换或当前标签页刷新后，
-仍可以恢复选项地址。新启动参数会覆盖旧值，新浏览器标签页需要重新从外部平台进入。
+`itemsPath` 指向响应中的对象数组，空串表示根数组；`labelPath` 用于显示，`keyPath` 指向稳定且唯一的选项标识，
+不能用显示标签代替标识。Web 端通过 `GET /api/config/shelltool/{tool}/fields/{field}/options`、MCP 通过
+`list_remote_options(shellTool, field)` 由后端获取归一化的 `{label, value}` 列表，列表接口只暴露标识与标签。
 
-RemoteSelect 由浏览器直接发起 GET，支持 HTTP/HTTPS，外部接口需要允许 Web 页面所在 origin 的 CORS。
-上游后端不会请求或代理该地址。`itemsPath` 指向响应中的对象数组，空串表示根数组；`labelPath` 只用于纯文本
-显示。完整对象模式把选中 item 作为 JSON object 绑定到 `Map`，不会把选项 URL 或选中对象写入生成历史。
-工具只有一个基础 RemoteSelect 且没有高级参数时，Web 端直接展示顶层字段，并在加载成功后默认选中第一项；
-其他参数布局仍保持手动选择。HTTP 的凭据暴露与响应篡改风险由部署方和外部平台评估。
+远程源 URL 只能配置在服务端 YAML，不能通过浏览器 URL 或 MCP 输入指定。浏览器不直接请求远程源，
+远程接口无需允许 Web 页面所在 origin 的 CORS。数据源与凭据转发配置见[自托管部署](/docs/self-host#远程选项)。
 
-只需要稳定 ID 时改用 `String` 字段，并设置 `valuePath = "id"`。String/ID 模式的 `valuePath` 必填。
-两种模式都不构成生成时的权限证明；生成器必须校验自己消费的字段。需要验证权限是否仍有效时，应使用 ID
-模式并由插件生成端自行回查外部平台。
+只需要稳定 ID 时改用 `String` 字段，并设置 `valuePath = "id"`；String/ID 模式的 `valuePath` 与对象模式的
+`keyPath` 均为必填。对象远程字段可以在 `shellToolConfig` 中传选项的 `value`，生成时服务端重新获取远程选项，
+在 `PLATFORM` 下使用当前请求在同一通道已验证的凭据，将标识解析为完整 `Map`；直接传完整 `Map` 仍然兼容。
+未标注 `@RemoteOptions` 的普通 `Map` 字段仍必须传 JSON object。生成器仍须校验最终配置。
 
 生成器通常继承 `ByteBuddyShellGenerator<T>`，在 `redefineTemplate()` 上把配置写进 shell 字段：
 

@@ -183,8 +183,8 @@ public final class ToolConfigFactory {
             throw new GenerationException("@RemoteOptions requires a String or Map field: "
                     + field.getDeclaringClass().getName() + "." + field.getName());
         }
-        if (StringUtils.isBlank(annotation.urlQueryParam()) || StringUtils.isBlank(annotation.labelPath())) {
-            throw new GenerationException("@RemoteOptions urlQueryParam and labelPath must not be blank: "
+        if (StringUtils.isBlank(annotation.labelPath())) {
+            throw new GenerationException("@RemoteOptions labelPath must not be blank: "
                     + field.getDeclaringClass().getName() + "." + field.getName());
         }
         if (type == String.class && StringUtils.isBlank(annotation.valuePath())) {
@@ -403,6 +403,7 @@ public final class ToolConfigFactory {
         private final String itemsPath;
         private final String labelPath;
         private final String valuePath;
+        private final String keyPath;
         private final boolean required;
 
         private RemoteSelectUi(RemoteOptions annotation) {
@@ -410,6 +411,7 @@ public final class ToolConfigFactory {
             this.itemsPath = annotation.itemsPath();
             this.labelPath = annotation.labelPath();
             this.valuePath = annotation.valuePath();
+            this.keyPath = annotation.keyPath();
             this.required = annotation.required();
         }
 
@@ -431,6 +433,10 @@ public final class ToolConfigFactory {
 
         public String getValuePath() {
             return valuePath;
+        }
+
+        public String getKeyPath() {
+            return keyPath;
         }
 
         public boolean isRequired() {

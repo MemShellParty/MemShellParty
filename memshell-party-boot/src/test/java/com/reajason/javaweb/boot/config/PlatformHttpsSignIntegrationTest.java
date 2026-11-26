@@ -91,7 +91,7 @@ class PlatformHttpsSignIntegrationTest {
         return httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
     }
 
-    private static HttpsServer httpsServer() {
+    static HttpsServer httpsServer() {
         try {
             Path directory = Files.createTempDirectory("platform-sign-https-");
             Path keystoreFile = directory.resolve("sign.p12");

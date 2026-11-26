@@ -25,7 +25,7 @@ public class MemShellGenerateRequest {
     private ShellConfig shellConfig;
 
     @JsonProperty(required = false)
-    @JsonPropertyDescription("Shell-tool-specific options: keys are the shell tool's config field names (see shellToolConfigs in memshell_capabilities / GET /api/config/shelltool/configs), e.g. pass, key, paramName, template. String and enum options use string values; object options use JSON objects. Omit or leave blank to use defaults; a key the chosen shellTool does not support is rejected.")
+    @JsonPropertyDescription("Shell-tool-specific options: keys are the shell tool's config field names (see shellToolConfigs in memshell_capabilities / GET /api/config/shelltool/configs), e.g. pass, key, paramName, template. String and enum options use string values; object options use JSON objects, except a configured remote-select object field also accepts an option identifier returned by list_remote_options / the remote-options REST endpoint and resolves it server-side. Omit or leave blank to use defaults; a key the chosen shellTool does not support is rejected.")
     private Map<String, Object> shellToolConfig;
 
     @JsonProperty(required = false)

@@ -53,6 +53,7 @@ export interface RemoteSelectUiHint {
   itemsPath: string;
   labelPath: string;
   valuePath?: string;
+  keyPath?: string;
   required: boolean;
 }
 

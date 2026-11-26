@@ -14,10 +14,11 @@ boot 服务内置 MCP Server，端点为 `/mcp`，协议为 Streamable HTTP。
 | 工具 | 说明 |
 | --- | --- |
 | `memshell_capabilities` | 列出全部 server、shellTool、shellType、packer、探测方式、混淆参数与混淆范围 |
+| `list_remote_options` | 按 `shellTool`、`field` 列出远程字段的 `{label, value}` 选项 |
 | `generate_memshell` | 在服务端直接生成内存马，返回 `memShellResult` 与 `packResult`；请求参数与 `POST /api/memshell/generate` 一致，支持 Godzilla、Behinder、AntSword、Suo5、Command 等 |
 | `generate_probe_shell` | 在服务端直接生成探测马，返回 `probeShellResult` 与 `packResult`；请求参数与 `POST /api/probe/generate` 一致，支持 DNSLog、ResponseBody、ResponseHeader、Sleep |
 
-> 建议先调用 `memshell_capabilities` 获取合法参数，再调用生成工具。生成在 MCP 服务内完成，payload 直接出现在工具结果中，不需要再发起 REST 请求，因此 MCP 与 REST 可以使用各自独立的凭据。
+> 生成结果直接包含 payload，无需再调用 REST；MCP 与 REST 可以使用各自独立的凭据。
 
 ## 客户端配置
 
@@ -95,18 +96,19 @@ claude mcp add --transport http memshell-party http://127.0.0.1:8080/mcp \
 
 请求头不存在时，也可以携带同名查询参数，例如 `http://127.0.0.1:8080/mcp?x_token=<平台令牌>`。请求头存在但为空、重复或错误时返回 403，正确的查询参数不能补救。
 
-MCP 与 REST 分开校验。MCP 使用 `platform.mcp.*`，直接调用 REST API 时使用 `platform.rest.*`，两者可以指向同一个平台接口。MCP 生成工具不依赖 REST 凭据。
+MCP 与 REST 分开校验。MCP 使用 `platform.mcp.*`，直接调用 REST API 时使用 `platform.rest.*`，两者可以指向同一个平台接口。MCP 生成工具不依赖 REST 凭据；`PLATFORM` 下远程选项只转发当前 MCP 请求已验证的凭据，不使用 REST 通道凭据。转发配置见[自托管部署](/docs/self-host#远程选项)。
 
 查询参数令牌可能进入 URL、访问日志和命令历史，优先使用请求头，并在非回环地址部署中使用 HTTPS。
 
 ## 调用流程
 
 1. 调用 `memshell_capabilities`，获取合法的 server、shellTool、shellType、packer 等取值。
-2. 调用 `generate_memshell` 或 `generate_probe_shell`，生成在服务端完成，直接返回 `packResult` 与结果元数据。
-3. 按需读取结果字段，例如 `memShellResult.shellClassName`、`memShellResult.injectorConfig` 与 `packResult`。
+2. 对 `ui.kind` 为 `remote-select` 的字段调用 `list_remote_options(shellTool, field)`，获取 `{label, value}` 选项。远程 URL 由服务端 YAML 固定，不能作为 MCP 输入；列表不返回完整远程对象。
+3. 调用 `generate_memshell`，将选项的 `value` 作为对应 `shellToolConfig` 字段值。对象字段由服务端重新获取并解析为完整 `Map`，`PLATFORM` 下使用当前 MCP 请求已验证的凭据；直接传完整 `Map` 仍然兼容。无远程字段的探测马仍直接调用 `generate_probe_shell`。生成结果直接返回 `packResult` 与结果元数据。
+4. 按需读取结果字段，例如 `memShellResult.shellClassName`、`memShellResult.injectorConfig` 与 `packResult`。
 
 示例指令：
 
 ```
-先调用 memshell_capabilities 获取合法参数，再调用 generate_memshell 直接生成 payload，并读取结果中的类名与 packResult。
+先调用 memshell_capabilities 获取合法参数；如有远程字段，调用 list_remote_options 获取选项标识，再调用 generate_memshell 生成 payload，并读取结果中的类名与 packResult。
 ```

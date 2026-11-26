@@ -105,7 +105,17 @@ function remoteConfig(required = true): ShellToolConfigEntry[] {
   ];
 }
 
-test("memshell transformation preserves a selected object and filters other tools", () => {
+test("memshell transformation preserves a remote object reference and filters other tools", () => {
+  const { shellToolConfig } = transformToPostData(
+    memShellValues({ profile: "profile-a", unrelated: "must-not-leak" }),
+    remoteConfig(),
+  );
+
+  assert.equal(shellToolConfig.profile, "profile-a");
+  assert.equal(shellToolConfig.unrelated, undefined);
+});
+
+test("memshell transformation still permits an inline remote object", () => {
   const profile = { id: "a", name: "Profile A", nested: { enabled: true } };
   const { shellToolConfig } = transformToPostData(
     memShellValues({ profile, unrelated: "must-not-leak" }),
@@ -122,13 +132,15 @@ test("the form schema retains dynamic remote object values", async () => {
   assert.deepEqual((validated as Record<string, unknown>).profile, profile);
 });
 
-test("memshell transformation rejects non-object values for object fields", () => {
+test("memshell transformation rejects scalars for ordinary object fields and arrays for remote fields", () => {
+  const ordinaryObjectConfig = remoteConfig();
+  delete ordinaryObjectConfig[0].params[0].ui;
   assert.throws(
-    () => transformToPostData(memShellValues({ profile: ["not", "an", "object"] }), remoteConfig()),
+    () => transformToPostData(memShellValues({ profile: "{}" }), ordinaryObjectConfig),
     /must be a JSON object: profile/,
   );
   assert.throws(
-    () => transformToPostData(memShellValues({ profile: "{}" }), remoteConfig()),
+    () => transformToPostData(memShellValues({ profile: ["not", "an", "object"] }), remoteConfig()),
     /must be a JSON object: profile/,
   );
 });

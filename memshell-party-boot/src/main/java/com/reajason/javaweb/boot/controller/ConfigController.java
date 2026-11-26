@@ -1,5 +1,8 @@
 package com.reajason.javaweb.boot.controller;
 
+import com.reajason.javaweb.boot.dto.RemoteOption;
+import com.reajason.javaweb.boot.service.RemoteOptionsChannel;
+import com.reajason.javaweb.boot.service.RemoteOptionsService;
 import com.reajason.javaweb.boot.vo.ServerVO;
 import com.reajason.javaweb.memshell.MemShellGenerator;
 import com.reajason.javaweb.memshell.PackerRegistry;
@@ -10,6 +13,7 @@ import com.reajason.javaweb.packer.PackerCategory;
 import com.reajason.javaweb.probe.generator.response.ResponseGenerator;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,9 +31,11 @@ import java.util.Map;
 public class ConfigController {
 
     private final MemShellGenerator memShellGenerator;
+    private final RemoteOptionsService remoteOptionsService;
 
-    public ConfigController(MemShellGenerator memShellGenerator) {
+    public ConfigController(MemShellGenerator memShellGenerator, RemoteOptionsService remoteOptionsService) {
         this.memShellGenerator = memShellGenerator;
+        this.remoteOptionsService = remoteOptionsService;
     }
 
     /**
@@ -76,6 +82,12 @@ public class ConfigController {
     @GetMapping("/shelltool/configs")
     public List<ToolConfigFactory.ToolConfigDescriptor> getShellToolConfigs() {
         return ToolConfigFactory.describeAll();
+    }
+
+    @GetMapping("/shelltool/{tool}/fields/{field}/options")
+    public Map<String, List<RemoteOption>> getRemoteOptions(@PathVariable String tool,
+                                                            @PathVariable String field) {
+        return Map.of("options", remoteOptionsService.listOptions(tool, field, RemoteOptionsChannel.REST));
     }
 
     /**

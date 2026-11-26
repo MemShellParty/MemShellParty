@@ -15,7 +15,7 @@ import { useLocation } from "react-router";
 
 import { useMDXComponents } from "@/components/mdx";
 import { baseOptions } from "@/lib/layout.shared";
-import { docs, getPageMarkdownUrl, source } from "@/lib/source";
+import { getDocsPage, getPageMarkdownUrl, source } from "@/lib/source";
 import { preserveQuery } from "@/utils/preserve-query";
 
 export async function loader({ params }: Route.LoaderArgs) {
@@ -25,7 +25,7 @@ export async function loader({ params }: Route.LoaderArgs) {
 
   const [pageTree] = await Promise.all([
     source.serializePageTree(source.getPageTree()),
-    page.data.preload(),
+    getDocsPage(page.path).preload(),
   ]);
 
   return {
@@ -37,11 +37,10 @@ export async function loader({ params }: Route.LoaderArgs) {
 
 function Content({ path, markdownUrl }: { path: string; markdownUrl: string }) {
   const location = useLocation();
-  const page = docs.getPage(path);
-  if (!page) throw new Error(`unknown page: ${path}`);
+  const page = getDocsPage(path);
   const authenticatedMarkdownUrl = preserveQuery(markdownUrl, location);
 
-  // content is loaded lazily, call `page.preload()` in the loader to avoid suspending
+  // content is loaded lazily; preload() in the loader avoids suspending
   const { toc } = use(page.load());
   const Mdx = page.body;
 

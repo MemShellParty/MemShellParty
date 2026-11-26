@@ -175,7 +175,8 @@ export default function MainConfigPanel({
     const minimumJreVersion =
       serverMetadata?.find((metadata) => metadata.name === server)?.minimumTargetJreVersion ?? 50;
     const nextJdkVersion =
-      JDKVersion.find((option) => Number.parseInt(option.value, 10) >= minimumJreVersion)?.value ?? "50";
+      JDKVersion.find((option) => Number.parseInt(option.value, 10) >= minimumJreVersion)?.value ??
+      "50";
     if (form.getValues("targetJdkVersion") !== nextJdkVersion) {
       form.setValue("targetJdkVersion", nextJdkVersion);
     }
