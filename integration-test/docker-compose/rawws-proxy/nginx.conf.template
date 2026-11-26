@@ -1,4 +1,4 @@
-# 模拟只转发普通 HTTP 的代理：默认上游 HTTP/1.0，不转发 Upgrade/Connection。
+# 模拟只转发普通 HTTP 的单层代理：默认上游 HTTP/1.0，不转发 Upgrade/Connection。
 upstream rawws_backend {
     server ${UPSTREAM};
 }

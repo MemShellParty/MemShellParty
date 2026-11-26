@@ -36,19 +36,3 @@ services:
       - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
     depends_on:
       - app
-  nginx2:
-    image: nginx:1.27-alpine
-    environment:
-      UPSTREAM: nginx1:80
-    volumes:
-      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
-    depends_on:
-      - nginx1
-  nginx3:
-    image: nginx:1.27-alpine
-    environment:
-      UPSTREAM: nginx2:80
-    volumes:
-      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
-    depends_on:
-      - nginx2
