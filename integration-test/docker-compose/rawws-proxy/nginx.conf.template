@@ -1,0 +1,16 @@
+# 模拟只转发普通 HTTP 的代理：默认上游 HTTP/1.0，不转发 Upgrade/Connection。
+upstream rawws_backend {
+    server ${UPSTREAM};
+}
+
+server {
+    listen 80;
+    server_name localhost;
+
+    location / {
+        proxy_pass http://rawws_backend;
+        proxy_set_header Host $host;
+        proxy_read_timeout 3s;
+        proxy_send_timeout 10s;
+    }
+}

@@ -1,0 +1,54 @@
+services:
+  app:
+    image: jetty:9.4-jre8
+    volumes:
+      - ../../../vul/vul-webapp/build/libs/vul-webapp.war:/var/lib/jetty/webapps/app.war
+  echo:
+    image: python:3.11-alpine
+    command:
+      - python
+      - -u
+      - -c
+      - |
+        import socket
+        import threading
+
+        def handle(conn):
+            with conn:
+                while True:
+                    data = conn.recv(65536)
+                    if not data:
+                        return
+                    conn.sendall(data)
+
+        server = socket.socket()
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind(("0.0.0.0", 9000))
+        server.listen()
+        while True:
+            conn, _ = server.accept()
+            threading.Thread(target=handle, args=(conn,), daemon=True).start()
+  nginx1:
+    image: nginx:1.27-alpine
+    environment:
+      UPSTREAM: app:8080
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      - app
+  nginx2:
+    image: nginx:1.27-alpine
+    environment:
+      UPSTREAM: nginx1:80
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      - nginx1
+  nginx3:
+    image: nginx:1.27-alpine
+    environment:
+      UPSTREAM: nginx2:80
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      - nginx2
