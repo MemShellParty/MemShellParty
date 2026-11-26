@@ -18,6 +18,12 @@ export const source = loader({
   plugins: [lucideIconsPlugin()],
 });
 
+export function getDocsPage(path: string) {
+  const page = docs.getPage(path);
+  if (!page) throw new Error(`unknown page: ${path}`);
+  return page;
+}
+
 export function getPageMarkdownUrl(page: InferPageType<typeof source>) {
   const segments = [...page.slugs, "content.md"];
 
@@ -28,7 +34,7 @@ export function getPageMarkdownUrl(page: InferPageType<typeof source>) {
 }
 
 export async function getLLMText(page: InferPageType<typeof source>) {
-  const processed = await page.data.getText("processed");
+  const processed = await getDocsPage(page.path).getText("processed");
 
   return `# ${page.data.title} (${page.url})
 

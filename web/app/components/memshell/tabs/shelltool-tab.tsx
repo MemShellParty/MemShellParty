@@ -141,9 +141,10 @@ export function ShellToolTabContent({
             {isRemoteParam(param) ? (
               <RemoteSelect
                 autoSelectFirst={param.name === singleRemoteParam?.name}
+                field={param.name}
                 hint={param.ui}
-                objectMode={param.type === "object"}
                 onChange={field.onChange}
+                tool={tool}
                 value={field.value as ShellToolConfigValue | undefined}
               />
             ) : isEnum ? (

@@ -1,6 +1,6 @@
 import type { RemoteSelectUiHint, ShellToolConfigValue } from "@/types/memshell";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -10,28 +10,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { launchContext } from "@/lib/launch-context";
 
-import { fetchRemoteOptions, remoteOptionKeyForValue, type RemoteOption } from "./remote-options";
+import { fetchRemoteOptions, type RemoteOption } from "./remote-options";
 
-type LoadStatus = "loading" | "ready" | "missing-source" | "error";
+type LoadStatus = "loading" | "ready" | "error";
 
 export function RemoteSelect({
+  tool,
+  field,
   hint,
-  objectMode,
   value,
   onChange,
   autoSelectFirst = false,
 }: Readonly<{
+  tool: string;
+  field: string;
   hint: RemoteSelectUiHint;
-  objectMode: boolean;
   value: ShellToolConfigValue | undefined;
   onChange: (value: ShellToolConfigValue | undefined) => void;
   autoSelectFirst?: boolean;
 }>) {
   const { t } = useTranslation(["memshell", "common"]);
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [sourceResolved, setSourceResolved] = useState(false);
   const [options, setOptions] = useState<RemoteOption[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [retryNonce, setRetryNonce] = useState(0);
@@ -39,33 +38,11 @@ export function RemoteSelect({
   onChangeRef.current = onChange;
 
   useEffect(() => {
-    let currentSource = "";
-    setSourceResolved(false);
-    const updateSource = () => {
-      const nextSource = launchContext.get(hint.urlQueryParam) ?? "";
-      if (nextSource !== currentSource) {
-        currentSource = nextSource;
-        setSourceUrl(nextSource);
-      }
-      setSourceResolved(true);
-    };
-    const unsubscribe = launchContext.subscribe(hint.urlQueryParam, updateSource);
-    updateSource();
-    return unsubscribe;
-  }, [hint.urlQueryParam]);
-
-  useEffect(() => {
-    if (!sourceResolved) return;
     onChangeRef.current(undefined);
     setOptions([]);
-    if (!sourceUrl) {
-      setStatus("missing-source");
-      return;
-    }
-
     const controller = new AbortController();
     setStatus("loading");
-    void fetchRemoteOptions(sourceUrl, hint, objectMode, controller.signal)
+    void fetchRemoteOptions(tool, field, controller.signal)
       .then((nextOptions) => {
         if (controller.signal.aborted) return;
         setOptions(nextOptions);
@@ -77,25 +54,21 @@ export function RemoteSelect({
         setStatus("error");
       });
     return () => controller.abort();
-  }, [sourceResolved, sourceUrl, retryNonce, hint, objectMode, autoSelectFirst]);
+  }, [tool, field, retryNonce, autoSelectFirst]);
 
-  const selectItems = useMemo(
-    () => options.map((option) => ({ value: option.key, label: option.label })),
-    [options],
-  );
-  const selectedKey = remoteOptionKeyForValue(options, value);
+  const selectedValue =
+    typeof value === "string" && options.some((option) => option.value === value) ? value : "";
   const unavailable = status !== "ready" || options.length === 0;
 
   return (
     <div className="space-y-1.5">
       <Select
         disabled={unavailable}
-        items={selectItems}
-        onValueChange={(nextKey: string | null) => {
-          const selected = options.find((option) => option.key === nextKey);
-          if (selected) onChange(selected.value);
+        items={options}
+        onValueChange={(nextValue: string | null) => {
+          if (nextValue !== null) onChange(nextValue);
         }}
-        value={selectedKey}
+        value={selectedValue}
       >
         <SelectTrigger aria-required={hint.required}>
           <SelectValue
@@ -106,17 +79,12 @@ export function RemoteSelect({
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
-            <SelectItem key={option.key} value={option.key}>
+            <SelectItem key={option.value} value={option.value}>
               {option.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      {status === "missing-source" ? (
-        <p className="text-xs text-destructive" role="alert">
-          {t("memshell:remoteOptions.missingSource")}
-        </p>
-      ) : null}
       {status === "error" ? (
         <div className="flex items-center gap-2 text-xs text-destructive" role="alert">
           <span>{t("memshell:remoteOptions.loadFailed")}</span>

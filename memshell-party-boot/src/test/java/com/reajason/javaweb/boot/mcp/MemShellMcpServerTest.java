@@ -42,7 +42,8 @@ class MemShellMcpServerTest {
 
             McpSchema.ListToolsResult tools = client.listTools();
             List<String> toolNames = tools.tools().stream().map(McpSchema.Tool::name).toList();
-            assertTrue(toolNames.containsAll(List.of("memshell_capabilities", "generate_memshell", "generate_probe_shell")),
+            assertTrue(toolNames.containsAll(List.of("memshell_capabilities", "list_remote_options",
+                            "generate_memshell", "generate_probe_shell")),
                     "unexpected tools: " + toolNames);
 
             // shellToolConfig 是各工具自定义（插件还能自己加字段）的参数 map，schema 里只能是开放对象：

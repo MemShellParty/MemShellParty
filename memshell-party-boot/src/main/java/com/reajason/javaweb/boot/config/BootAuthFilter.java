@@ -17,7 +17,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
@@ -84,11 +83,35 @@ public class BootAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        if (mode == AuthProperties.Mode.OFF || authenticated(request)) {
+        if (mode == AuthProperties.Mode.OFF) {
             filterChain.doFilter(request, response);
             return;
         }
+        if (mode == AuthProperties.Mode.ADMIN) {
+            if (adminAuthenticated(request)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+            reject(response);
+            return;
+        }
 
+        AuthProperties.Scope scope = scopeFor(request);
+        String credential = credential(request, scope.getAuthParam());
+        if (credential == null || !verify(scope, credential)) {
+            reject(response);
+            return;
+        }
+
+        PlatformAuthContext.set(credential);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            PlatformAuthContext.clear();
+        }
+    }
+
+    private void reject(HttpServletResponse response) {
         response.resetBuffer();
         response.setStatus(mode == AuthProperties.Mode.ADMIN
                 ? HttpServletResponse.SC_UNAUTHORIZED
@@ -97,15 +120,6 @@ public class BootAuthFilter extends OncePerRequestFilter {
         if (mode == AuthProperties.Mode.ADMIN) {
             response.setHeader(HttpHeaders.WWW_AUTHENTICATE, ADMIN_CHALLENGE);
         }
-    }
-
-    private boolean authenticated(HttpServletRequest request) {
-        if (mode == AuthProperties.Mode.ADMIN) {
-            return adminAuthenticated(request);
-        }
-        AuthProperties.Scope scope = scopeFor(request);
-        String credential = credential(request, scope.getAuthParam());
-        return credential != null && verify(scope, credential);
     }
 
     private AuthProperties.Scope scopeFor(HttpServletRequest request) {
@@ -232,40 +246,7 @@ public class BootAuthFilter extends OncePerRequestFilter {
         if (signParam == null) {
             return URI.create(scope.getSignUrl());
         }
-
-        String signUrl = scope.getSignUrl();
-        StringBuilder builder = new StringBuilder(signUrl);
-        char last = signUrl.charAt(signUrl.length() - 1);
-        if (last != '?' && last != '&') {
-            builder.append(signUrl.indexOf('?') >= 0 ? '&' : '?');
-        }
-        builder.append(encodeQueryComponent(signParam))
-                .append('=')
-                .append(encodeQueryComponent(credential));
-        return URI.create(builder.toString());
-    }
-
-    private static String encodeQueryComponent(String value) {
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        StringBuilder encoded = new StringBuilder(bytes.length);
-        for (byte valueByte : bytes) {
-            int unsigned = valueByte & 0xFF;
-            if (isUnreserved(unsigned)) {
-                encoded.append((char) unsigned);
-            } else {
-                encoded.append('%')
-                        .append(Character.toUpperCase(Character.forDigit((unsigned >> 4) & 0xF, 16)))
-                        .append(Character.toUpperCase(Character.forDigit(unsigned & 0xF, 16)));
-            }
-        }
-        return encoded.toString();
-    }
-
-    private static boolean isUnreserved(int value) {
-        return value >= 'A' && value <= 'Z'
-                || value >= 'a' && value <= 'z'
-                || value >= '0' && value <= '9'
-                || value == '-' || value == '.' || value == '_' || value == '~';
+        return PlatformHttpSupport.appendQueryParam(scope.getSignUrl(), signParam, credential);
     }
 
     private static String trimToNull(String value) {
@@ -324,7 +305,7 @@ public class BootAuthFilter extends OncePerRequestFilter {
         if (authParam == null || authParam.isBlank()) {
             throw new IllegalArgumentException(prefix + "auth-param must be non-blank in PLATFORM mode");
         }
-        if (!isValidQueryName(authParam)) {
+        if (!PlatformHttpSupport.isValidQueryName(authParam)) {
             throw new IllegalArgumentException(prefix
                     + "auth-param must be valid as an HTTP field-name token and query parameter name");
         }
@@ -341,10 +322,10 @@ public class BootAuthFilter extends OncePerRequestFilter {
             throw new IllegalArgumentException(prefix + "sign-param or " + prefix
                     + "sign-header must be set in PLATFORM mode");
         }
-        if (signParam != null && !isValidQueryName(signParam)) {
+        if (signParam != null && !PlatformHttpSupport.isValidQueryName(signParam)) {
             throw new IllegalArgumentException(prefix + "sign-param must be valid as a query parameter name");
         }
-        if (signHeader != null && !isValidHeaderName(signHeader)) {
+        if (signHeader != null && !PlatformHttpSupport.isValidHeaderName(signHeader)) {
             throw new IllegalArgumentException(prefix + "sign-header must be valid as an HTTP field-name token");
         }
 
@@ -358,49 +339,6 @@ public class BootAuthFilter extends OncePerRequestFilter {
         if (signUrl == null || signUrl.isBlank()) {
             throw new IllegalArgumentException(property + " must be non-blank in PLATFORM mode");
         }
-
-        final URI uri;
-        try {
-            uri = new URI(signUrl);
-        } catch (URISyntaxException exception) {
-            throw new IllegalArgumentException(property + " must be a valid absolute http or https URL");
-        }
-        String scheme = uri.getScheme();
-        if (!uri.isAbsolute()
-                || scheme == null
-                || !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))
-                || uri.getHost() == null
-                || uri.getHost().isBlank()) {
-            throw new IllegalArgumentException(property + " must be a valid absolute http or https URL");
-        }
-        if (uri.getFragment() != null) {
-            throw new IllegalArgumentException(property + " must not contain a fragment");
-        }
-    }
-
-    private static boolean isValidQueryName(String name) {
-        for (int index = 0; index < name.length(); index++) {
-            char current = name.charAt(index);
-            if (current == '&' || current == '#' || !isTokenCharacter(current)) {
-                return false;
-            }
-        }
-        return !name.isEmpty();
-    }
-
-    private static boolean isValidHeaderName(String name) {
-        for (int index = 0; index < name.length(); index++) {
-            if (!isTokenCharacter(name.charAt(index))) {
-                return false;
-            }
-        }
-        return !name.isEmpty();
-    }
-
-    private static boolean isTokenCharacter(char value) {
-        return value >= '0' && value <= '9'
-                || value >= 'A' && value <= 'Z'
-                || value >= 'a' && value <= 'z'
-                || "!#$%&'*+-.^_`|~".indexOf(value) >= 0;
+        PlatformHttpSupport.validateHttpUrl(signUrl, property);
     }
 }

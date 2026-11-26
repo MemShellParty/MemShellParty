@@ -30,17 +30,20 @@ import java.util.Objects;
 public class GenerationService {
 
     private final MemShellGenerator memShellGenerator;
+    private final RemoteOptionsService remoteOptionsService;
 
-    public GenerationService(MemShellGenerator memShellGenerator) {
+    public GenerationService(MemShellGenerator memShellGenerator, RemoteOptionsService remoteOptionsService) {
         this.memShellGenerator = memShellGenerator;
+        this.remoteOptionsService = remoteOptionsService;
     }
 
-    public MemShellGenerateResponse generateMemShell(MemShellGenerateRequest request) {
+    public MemShellGenerateResponse generateMemShell(MemShellGenerateRequest request, RemoteOptionsChannel channel) {
         ShellConfig shellConfig = request.getShellConfig();
         if (shellConfig == null) {
             throw new InvalidInputException("shellConfig is required");
         }
-        Map<String, Object> shellToolParams = request.getShellToolConfig();
+        Map<String, Object> shellToolParams = remoteOptionsService.resolveReferences(
+                shellConfig.getShellTool(), request.getShellToolConfig(), channel);
         InjectorConfig injectorConfig = request.getInjectorConfig();
         PackerConstraints constraints = PackerConstraints.forPacker(request.getPacker());
         constraints.constrainObfuscation(shellConfig.getObfuscation());

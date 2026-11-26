@@ -3,6 +3,7 @@ package com.reajason.javaweb.boot.controller;
 import com.reajason.javaweb.boot.dto.MemShellGenerateRequest;
 import com.reajason.javaweb.boot.dto.MemShellGenerateResponse;
 import com.reajason.javaweb.boot.service.GenerationService;
+import com.reajason.javaweb.boot.service.RemoteOptionsChannel;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -22,6 +23,6 @@ public class MemShellGeneratorController {
 
     @PostMapping
     public MemShellGenerateResponse generate(@RequestBody MemShellGenerateRequest request) {
-        return generationService.generateMemShell(request);
+        return generationService.generateMemShell(request, RemoteOptionsChannel.REST);
     }
 }

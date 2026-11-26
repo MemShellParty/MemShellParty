@@ -124,11 +124,14 @@ export function transformToPostData(
   for (const param of shellToolParams ?? []) {
     const value = formValue[param.name as keyof MemShellFormSchema] as unknown;
     if (param.type === "object") {
-      if (value === undefined || value === null) continue;
-      if (!isObjectValue(value)) {
+      if (value === undefined || value === null || value === "") continue;
+      if (isObjectValue(value)) {
+        shellToolConfig[param.name] = value;
+      } else if (param.ui?.kind === "remote-select" && typeof value === "string") {
+        shellToolConfig[param.name] = value;
+      } else {
         throw new TypeError(`Shell tool object parameter must be a JSON object: ${param.name}`);
       }
-      shellToolConfig[param.name] = value;
     } else if (typeof value === "string" && value !== "") {
       shellToolConfig[param.name] = value;
     }

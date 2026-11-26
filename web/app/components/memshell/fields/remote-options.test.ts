@@ -1,74 +1,37 @@
-import type { RemoteSelectUiHint } from "@/types/memshell";
-
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
   fetchRemoteOptions,
   normalizeRemoteOptions,
-  remoteOptionKeyForValue,
-  validateRemoteOptionsUrl,
 } from "@/components/memshell/fields/remote-options";
 
-function hint(overrides: Partial<RemoteSelectUiHint> = {}): RemoteSelectUiHint {
-  return {
-    kind: "remote-select",
-    urlQueryParam: "profileUrlParam",
-    itemsPath: "",
-    labelPath: "name",
-    valuePath: "id",
-    required: true,
-    ...overrides,
-  };
-}
+test("normalized options expose only labels and stable identifiers", () => {
+  const options = normalizeRemoteOptions({
+    options: [
+      { label: "same", value: "a" },
+      { label: "same", value: "b" },
+    ],
+  });
 
-test("object mode preserves the complete item when labels are duplicated", () => {
-  const first = { id: "a", name: "same", config: { level: 1 } };
-  const second = { id: "b", name: "same", config: { level: 2 } };
-  const options = normalizeRemoteOptions([first, second], hint(), true);
-
-  assert.deepEqual(
-    options.map((option) => option.label),
-    ["same", "same"],
-  );
-  assert.equal(options[0].value, first);
-  assert.equal(options[1].value, second);
-  assert.equal(remoteOptionKeyForValue(options, second), "1");
-});
-
-test("nested items and numeric IDs support string mode", () => {
-  const options = normalizeRemoteOptions(
-    { data: { items: [{ id: 7, name: "seven", ignored: true }] } },
-    hint({ itemsPath: "data.items" }),
-    false,
-  );
-  assert.deepEqual(options, [{ key: "0", label: "seven", value: "7" }]);
+  assert.deepEqual(options, [
+    { label: "same", value: "a" },
+    { label: "same", value: "b" },
+  ]);
 });
 
 test("malformed option responses fail closed", () => {
-  assert.throws(() => normalizeRemoteOptions({ items: [] }, hint(), true), /itemsPath/);
-  assert.throws(() => normalizeRemoteOptions(["not-an-object"], hint(), true), /must be objects/);
-  assert.throws(() => normalizeRemoteOptions([{ id: "a" }], hint(), true), /labels/);
+  assert.throws(() => normalizeRemoteOptions(null), /must be an object/);
+  assert.throws(() => normalizeRemoteOptions([]), /options array/);
+  assert.throws(() => normalizeRemoteOptions({}), /options array/);
   assert.throws(
-    () => normalizeRemoteOptions([{ id: "a", name: "a" }], hint({ valuePath: "" }), false),
-    /require valuePath/,
+    () => normalizeRemoteOptions({ options: [{ label: "a", value: "" }] }),
+    /non-blank/,
   );
+  assert.throws(() => normalizeRemoteOptions({ options: [{ label: "a" }] }), /string labels/);
 });
 
-test("HTTP and HTTPS URLs are accepted while other schemes are rejected", () => {
-  assert.equal(
-    validateRemoteOptionsUrl("http://localhost:8080/options?token=a"),
-    "http://localhost:8080/options?token=a",
-  );
-  assert.equal(
-    validateRemoteOptionsUrl("https://example.test/options"),
-    "https://example.test/options",
-  );
-  assert.throws(() => validateRemoteOptionsUrl("javascript:alert(1)"), /HTTP or HTTPS/);
-  assert.throws(() => validateRemoteOptionsUrl("data:application/json,[]"), /HTTP or HTTPS/);
-});
-
-test("remote loading uses a direct GET without ambient credentials", async (t) => {
+test("remote loading calls the backend field endpoint without an external URL", async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => {
     globalThis.fetch = originalFetch;
@@ -78,22 +41,19 @@ test("remote loading uses a direct GET without ambient credentials", async (t) =
   globalThis.fetch = async (input, init) => {
     requestUrl = String(input);
     requestInit = init;
-    return new Response(JSON.stringify([{ id: "a", name: "Profile A" }]), {
+    return new Response(JSON.stringify({ options: [{ label: "Profile A", value: "profile-a" }] }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   };
 
   const options = await fetchRemoteOptions(
-    "http://localhost/options?token=secret",
-    hint(),
-    true,
+    "Red Queen",
+    "profile/key",
     new AbortController().signal,
   );
-  assert.equal(requestUrl, "http://localhost/options?token=secret");
+  assert.match(requestUrl, /\/api\/config\/shelltool\/Red%20Queen\/fields\/profile%2Fkey\/options/);
   assert.equal(requestInit?.method, "GET");
-  assert.equal(requestInit?.credentials, "omit");
   assert.equal(requestInit?.cache, "no-store");
-  assert.equal(requestInit?.referrerPolicy, "no-referrer");
-  assert.deepEqual(options[0].value, { id: "a", name: "Profile A" });
+  assert.deepEqual(options, [{ label: "Profile A", value: "profile-a" }]);
 });

@@ -85,10 +85,11 @@ public class RemoteOptionsTest {
         assertEquals("object", remoteObject.getType());
         ToolConfigFactory.RemoteSelectUi objectUi = remoteObject.getUi();
         assertEquals("remote-select", objectUi.getKind());
-        assertEquals("search", objectUi.getUrlQueryParam());
+        assertEquals("", objectUi.getUrlQueryParam());
         assertEquals("", objectUi.getItemsPath());
         assertEquals("name", objectUi.getLabelPath());
         assertEquals("", objectUi.getValuePath());
+        assertEquals("id", objectUi.getKeyPath());
         assertFalse(objectUi.isRequired());
 
         ToolConfigFactory.ConfigParam plainObject = params.get("plainObject");
@@ -159,7 +160,7 @@ public class RemoteOptionsTest {
         private String remoteId;
 
         @ConfigField
-        @RemoteOptions(urlQueryParam = "search")
+        @RemoteOptions(keyPath = "id")
         private Map<String, Object> remoteObject;
 
         @ConfigField

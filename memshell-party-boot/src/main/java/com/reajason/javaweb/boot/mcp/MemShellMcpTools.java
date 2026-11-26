@@ -5,7 +5,10 @@ import com.reajason.javaweb.boot.dto.MemShellGenerateRequest;
 import com.reajason.javaweb.boot.dto.MemShellGenerateResponse;
 import com.reajason.javaweb.boot.dto.ProbeShellGenerateRequest;
 import com.reajason.javaweb.boot.dto.ProbeShellGenerateResponse;
+import com.reajason.javaweb.boot.dto.RemoteOption;
 import com.reajason.javaweb.boot.service.GenerationService;
+import com.reajason.javaweb.boot.service.RemoteOptionsChannel;
+import com.reajason.javaweb.boot.service.RemoteOptionsService;
 import com.reajason.javaweb.memshell.MemShellGenerator;
 import com.reajason.javaweb.memshell.PackerRegistry;
 import com.reajason.javaweb.memshell.ToolConfigFactory;
@@ -35,10 +38,13 @@ public class MemShellMcpTools {
 
     private final MemShellGenerator memShellGenerator;
     private final GenerationService generationService;
+    private final RemoteOptionsService remoteOptionsService;
 
-    public MemShellMcpTools(MemShellGenerator memShellGenerator, GenerationService generationService) {
+    public MemShellMcpTools(MemShellGenerator memShellGenerator, GenerationService generationService,
+                            RemoteOptionsService remoteOptionsService) {
         this.memShellGenerator = memShellGenerator;
         this.generationService = generationService;
+        this.remoteOptionsService = remoteOptionsService;
     }
 
     @McpTool(name = "memshell_capabilities", description = """
@@ -46,7 +52,9 @@ public class MemShellMcpTools {
             and shell (injector) types, every shell tool's configurable parameters (name, type, enum options, \
             basic/advanced group), available payload packers, probe methods/contents and probe ResponseBody/ResponseHeader servers, \
             and class obfuscation options (name, type, default value, valid range) and memshell obfuscation scopes. \
-            Always call this first to discover valid values before calling generate_memshell or generate_probe_shell.""")
+            For fields whose ui.kind is remote-select, call list_remote_options with their tool and field name to \
+            obtain valid option identifiers. Always call this first to discover valid values before calling \
+            generate_memshell or generate_probe_shell.""")
     public Map<String, Object> capabilities() {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("servers", memShellGenerator.getShellTypeCatalog().asMap());
@@ -58,6 +66,18 @@ public class MemShellMcpTools {
         result.put("obfuscationOptions", OptionRegistry.describeAll());
         result.put("obfuscationScopes", Arrays.stream(ObfuscationScope.values()).map(Enum::name).toList());
         return result;
+    }
+
+    @McpTool(name = "list_remote_options", description = """
+            List the display labels and stable identifiers for a shell-tool field whose ui.kind is remote-select in \
+            memshell_capabilities. The remote URL is fixed by server configuration; callers cannot supply it. \
+            Pass shellTool and field exactly as listed in shellToolConfigs. Use an option's value as the corresponding \
+            shellToolConfig value in generate_memshell. For object fields, the server resolves that identifier to the \
+            complete object using the current MCP credential; the complete remote object is not returned here.""")
+    public Map<String, List<RemoteOption>> listRemoteOptions(
+            @McpToolParam(description = "Shell tool name from memshell_capabilities") String shellTool,
+            @McpToolParam(description = "Remote-select config field name") String field) {
+        return Map.of("options", remoteOptionsService.listOptions(shellTool, field, RemoteOptionsChannel.MCP));
     }
 
     @McpTool(name = "generate_memshell", description = """
@@ -72,7 +92,8 @@ public class MemShellMcpTools {
             Godzilla/GodzillaSession -> pass + key; Behinder/AntSword -> pass; Command -> paramName (plus optional template with a {command} \
             placeholder, encryptor, implementationClass); Suo5/NeoreGeorg/Proxy -> optional headerName + headerValue; \
             Custom -> shellClassBase64. A key the chosen shellTool does not support is rejected. \
-            All blank optional fields fall back to secure random defaults. \
+            For a remote-select object field, pass the string value returned by list_remote_options; passing a complete \
+            inline object remains supported. All blank optional fields fall back to secure random defaults. \
             shellConfig.obfuscation enables class obfuscation (disabled by default): {"enabled": true} enables class \
             obfuscation, and obfuscation.options overrides individual settings — valid option keys, \
             defaults and ranges are listed as obfuscationOptions in memshell_capabilities; unknown keys are rejected. \
@@ -93,7 +114,7 @@ public class MemShellMcpTools {
         if (request == null) {
             throw new InvalidInputException("request is required");
         }
-        return generationService.generateMemShell(request);
+        return generationService.generateMemShell(request, RemoteOptionsChannel.MCP);
     }
 
     @McpTool(name = "generate_probe_shell", description = """

@@ -171,3 +171,28 @@ curl -H 'x_token: <平台令牌>' http://127.0.0.1:8080/api/config
 校验请求不校验证书，HTTPS 连接可被中间人截获并伪造成功响应，因此 `sign-url` 应只指向可信网络内的地址。
 
 查询参数令牌可能进入 URL、浏览器历史、代理与访问日志、命令历史和监控数据。生产环境应使用 HTTPS，限制直接访问应用端口。反向代理应负责 TLS 终止。
+
+## 远程选项
+
+`@RemoteOptions` 字段的数据源只在服务端 YAML 中配置，不接受浏览器 URL 或 MCP 工具入参：
+
+```yaml
+memshell-party:
+  remote-options:
+    sources:
+      - tool: ExampleTool
+        field: profile
+        url: https://platform.example/profiles
+        rest:
+          auth-header: x_token
+        mcp:
+          auth-param: app_key
+```
+
+`tool` 与 `field` 对应已注册的工具和字段。`rest` 与 `mcp` 分别配置当前通道的出站凭据位置，各自可设置
+`auth-header` 或 `auth-param`。示例中的 `x_token`、`app_key` 是转发到远程源的请求头、查询参数名称，
+不是静态密钥；参数值来自当前请求在同一通道已通过平台验证的凭据。
+
+`PLATFORM` 下当前通道未配置转发或缺少已验证凭据时直接失败，不会匿名请求，也不会借用另一通道的凭据。
+远程客户端使用正常的 TLS 证书与主机名校验，不跟随重定向；连接、读取超时分别为 3 秒、5 秒，
+响应最多 1 MiB、1000 个选项。
