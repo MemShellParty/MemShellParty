@@ -2,8 +2,10 @@ package com.reajason.javaweb.desktop.memshell.util;
 
 import org.junit.jupiter.api.Test;
 
+import javax.swing.SwingUtilities;
 import java.awt.Insets;
 import java.awt.event.ComponentEvent;
+import java.lang.reflect.InvocationTargetException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,67 +54,95 @@ class Base64DisplayAreaTest {
 
     @Test
     void rewrapsToFollowComponentWidth() {
-        Base64DisplayArea area = new Base64DisplayArea();
-        StringBuilder raw = new StringBuilder();
-        for (int i = 0; i < 400; i++) {
-            raw.append('A');
-        }
-        area.showBase64(raw.toString());
-        // 布局前没有真实宽度：按默认列宽（MIME 76）展示，且文本区自身不换行
-        assertEquals(Base64DisplayArea.DEFAULT_COLUMNS, area.getText().indexOf('\n'));
-        assertFalse(area.getLineWrap());
+        onEdt(() -> {
+            Base64DisplayArea area = new Base64DisplayArea();
+            StringBuilder raw = new StringBuilder();
+            for (int i = 0; i < 400; i++) {
+                raw.append('A');
+            }
+            area.showBase64(raw.toString());
+            // 布局前没有真实宽度：按默认列宽（MIME 76）展示，且文本区自身不换行
+            assertEquals(Base64DisplayArea.DEFAULT_COLUMNS, area.getText().indexOf('\n'));
+            assertFalse(area.getLineWrap());
 
-        // 模拟布局给出真实宽度：期望列数 = (宽度 - insets - 1px 余量) / 小数字符宽
-        double charWidth = area.getFontMetrics(area.getFont()).stringWidth("0000000000") / 10.0;
-        Insets insets = area.getInsets();
-        area.setSize((int) (charWidth * 50) + insets.left + insets.right + 2, 600);
-        area.dispatchEvent(new ComponentEvent(area, ComponentEvent.COMPONENT_RESIZED));
-        assertEquals(50, area.getText().indexOf('\n'));
-        assertEquals(raw.toString(), area.getText().replace("\n", ""));
+            // 模拟布局给出真实宽度：期望列数 = (宽度 - insets - 1px 余量) / 小数字符宽
+            double charWidth = area.getFontMetrics(area.getFont()).stringWidth("0000000000") / 10.0;
+            Insets insets = area.getInsets();
+            area.setSize((int) (charWidth * 50) + insets.left + insets.right + 2, 600);
+            area.dispatchEvent(new ComponentEvent(area, ComponentEvent.COMPONENT_RESIZED));
+            assertEquals(50, area.getText().indexOf('\n'));
+            assertEquals(raw.toString(), area.getText().replace("\n", ""));
 
-        // 变宽再重排
-        area.setSize((int) (charWidth * 120) + insets.left + insets.right + 2, 600);
-        area.dispatchEvent(new ComponentEvent(area, ComponentEvent.COMPONENT_RESIZED));
-        assertEquals(120, area.getText().indexOf('\n'));
-        assertEquals(raw.toString(), area.getText().replace("\n", ""));
+            // 变宽再重排
+            area.setSize((int) (charWidth * 120) + insets.left + insets.right + 2, 600);
+            area.dispatchEvent(new ComponentEvent(area, ComponentEvent.COMPONENT_RESIZED));
+            assertEquals(120, area.getText().indexOf('\n'));
+            assertEquals(raw.toString(), area.getText().replace("\n", ""));
+        });
     }
 
     @Test
     void preferredWidthStaysAnchoredRegardlessOfContent() {
-        Base64DisplayArea area = new Base64DisplayArea();
-        StringBuilder raw = new StringBuilder();
-        for (int i = 0; i < 400; i++) {
-            raw.append('A');
-        }
-        area.showBase64(raw.toString());
-        // 重排到 120 列后内容行宽远超 40 列锚：首选宽度仍必须是列数锚，
-        // 否则最小宽度被内容顶大、视口不再跟随缩放（窄窗口横滚条回归）
-        double charWidth = area.getFontMetrics(area.getFont()).stringWidth("0000000000") / 10.0;
-        Insets insets = area.getInsets();
-        area.setSize((int) (charWidth * 120) + insets.left + insets.right + 2, 600);
-        area.dispatchEvent(new ComponentEvent(area, ComponentEvent.COMPONENT_RESIZED));
-        assertEquals(120, area.getText().indexOf('\n'));
-        int anchor = area.getFontMetrics(area.getFont()).charWidth('m') * 40 + insets.left + insets.right;
-        assertEquals(anchor, area.getPreferredSize().width);
-        assertTrue(area.getPreferredSize().width < charWidth * 120);
+        onEdt(() -> {
+            Base64DisplayArea area = new Base64DisplayArea();
+            StringBuilder raw = new StringBuilder();
+            for (int i = 0; i < 400; i++) {
+                raw.append('A');
+            }
+            area.showBase64(raw.toString());
+            // 重排到 120 列后内容行宽远超 40 列锚：首选宽度仍必须是列数锚，
+            // 否则最小宽度被内容顶大、视口不再跟随缩放（窄窗口横滚条回归）
+            double charWidth = area.getFontMetrics(area.getFont()).stringWidth("0000000000") / 10.0;
+            Insets insets = area.getInsets();
+            area.setSize((int) (charWidth * 120) + insets.left + insets.right + 2, 600);
+            area.dispatchEvent(new ComponentEvent(area, ComponentEvent.COMPONENT_RESIZED));
+            assertEquals(120, area.getText().indexOf('\n'));
+            int anchor = area.getFontMetrics(area.getFont()).charWidth('m') * 40 + insets.left + insets.right;
+            assertEquals(anchor, area.getPreferredSize().width);
+            assertTrue(area.getPreferredSize().width < charWidth * 120);
+        });
     }
 
     @Test
     void plainTextModeIgnoresResize() {
-        Base64DisplayArea area = new Base64DisplayArea();
-        StringBuilder raw = new StringBuilder();
-        for (int i = 0; i < 400; i++) {
-            raw.append('A');
-        }
-        area.showBase64(raw.toString());
-        area.showText("public class Foo {}", true);
-        area.dispatchEvent(new ComponentEvent(area, ComponentEvent.COMPONENT_RESIZED));
-        assertEquals("public class Foo {}", area.getText());
-        assertTrue(area.getLineWrap());
+        onEdt(() -> {
+            Base64DisplayArea area = new Base64DisplayArea();
+            StringBuilder raw = new StringBuilder();
+            for (int i = 0; i < 400; i++) {
+                raw.append('A');
+            }
+            area.showBase64(raw.toString());
+            area.showText("public class Foo {}", true);
+            area.dispatchEvent(new ComponentEvent(area, ComponentEvent.COMPONENT_RESIZED));
+            assertEquals("public class Foo {}", area.getText());
+            assertTrue(area.getLineWrap());
 
-        // 回到 Base64 模式：恢复宽度跟随
-        area.showBase64(raw.toString());
-        assertFalse(area.getLineWrap());
-        assertEquals(raw.toString(), area.getText().replace("\n", ""));
+            // 回到 Base64 模式：恢复宽度跟随
+            area.showBase64(raw.toString());
+            assertFalse(area.getLineWrap());
+            assertEquals(raw.toString(), area.getText().replace("\n", ""));
+        });
+    }
+
+    /**
+     * Swing 组件只能在 EDT 上驱动：setSize 会把 COMPONENT_RESIZED 异步投递到 EDT，
+     * 与测试线程手动 dispatch 的同一事件并发改写文本区，断言可能读到重排中途的旧文本。
+     */
+    private static void onEdt(Runnable action) {
+        try {
+            SwingUtilities.invokeAndWait(action);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            throw new AssertionError(cause);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(e);
+        }
     }
 }
