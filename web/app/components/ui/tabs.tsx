@@ -62,7 +62,9 @@ function Tabs({
 }
 
 const tabsListVariants = cva(
-  "rounded-lg p-[3px] group-data-horizontal/tabs:h-9 data-[variant=line]:rounded-none group/tabs-list text-muted-foreground inline-flex w-fit max-w-full items-center justify-start overflow-x-auto group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col group-data-[orientation=vertical]/tabs:overflow-x-visible",
+  // 横向 tab 列表需要 overflow-x-auto 支持窄屏滚动；同时必须显式 overflow-y-hidden，
+  // 否则 active 触发器的下划线（after:bottom-[-5px]）溢出 padding box 会触发纵向滚动条。
+  "rounded-lg p-[3px] group-data-horizontal/tabs:h-9 data-[variant=line]:rounded-none group/tabs-list text-muted-foreground inline-flex w-fit max-w-full items-center justify-start overflow-x-auto group-data-[orientation=horizontal]/tabs:overflow-y-hidden group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col group-data-[orientation=vertical]/tabs:overflow-x-visible",
   {
     variants: {
       variant: {
